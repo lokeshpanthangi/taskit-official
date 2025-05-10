@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { useOutletContext } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
 import { useTasks } from "@/hooks/useTasks";
+import { Task } from "@/services/taskService";
 
 type OutletContextType = {
   toggleDetailPanel: (taskId?: string) => void;
