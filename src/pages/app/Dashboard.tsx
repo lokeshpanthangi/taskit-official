@@ -211,12 +211,12 @@ const Dashboard = () => {
               >
                 {theme === "dark" ? (
                   <>
-                    <Sun size={24} />
+                    <Sun width={24} height={24} />
                     <span>Light Mode</span>
                   </>
                 ) : (
                   <>
-                    <Moon size={24} />
+                    <Moon width={24} height={24} />
                     <span>Dark Mode</span>
                   </>
                 )}
@@ -235,8 +235,6 @@ function Sun(props: React.SVGProps<SVGSVGElement>) {
     <svg
       {...props}
       xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -262,8 +260,6 @@ function Moon(props: React.SVGProps<SVGSVGElement>) {
     <svg
       {...props}
       xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

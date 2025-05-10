@@ -70,7 +70,8 @@ export default {
 					low: '#4ADE80',
 					medium: '#FACC15',
 					high: '#F97316',
-					urgent: '#EF4444'
+					urgent: '#EF4444',
+					veryhigh: '#FB7185'
 				}
 			},
 			borderRadius: {
@@ -103,6 +104,10 @@ export default {
 					'0%': { transform: 'scale(0.95)' },
 					'40%': { transform: 'scale(1.05)' },
 					'100%': { transform: 'scale(1)' }
+				},
+				'hover-lift': {
+					'0%': { transform: 'translateY(0)' },
+					'100%': { transform: 'translateY(-5px)' }
 				}
 			},
 			animation: {
@@ -111,7 +116,8 @@ export default {
 				'fade-in': 'fade-in 0.3s ease-out',
 				'slide-in': 'slide-in 0.3s ease-out',
 				'scale-in': 'scale-in 0.3s ease-out',
-				'pop': 'pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+				'pop': 'pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+				'hover-lift': 'hover-lift 0.3s ease-out forwards'
 			}
 		}
 	},
