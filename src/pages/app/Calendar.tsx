@@ -124,11 +124,14 @@ const Calendar = () => {
                 : 'Create New Task'}
             </DialogTitle>
           </DialogHeader>
-          <CreateTaskModal 
-            onClose={handleCloseCreateTaskModal} 
-            onSuccess={handleTaskCreated}
-            defaultDate={selectedDate}
-          />
+          <div>
+            <CreateTaskModal 
+              isOpen={isCreateTaskModalOpen}
+              onClose={handleCloseCreateTaskModal} 
+              onSuccess={handleTaskCreated}
+              defaultDate={selectedDate}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

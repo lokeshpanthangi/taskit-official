@@ -6,7 +6,6 @@ import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import TaskDetailPanel from "@/components/tasks/TaskDetailPanel";
 import NotificationHeader from "@/components/layout/NotificationHeader";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
 
 const AppLayout = () => {
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
@@ -53,14 +52,12 @@ const AppLayout = () => {
             
             {/* Right panel for task details (conditionally rendered) */}
             {isDetailPanelOpen && (
-              <Tabs defaultValue="details" className="w-96 border-l border-border/40 bg-card overflow-y-auto">
-                <div>
-                  <TaskDetailPanel 
-                    taskId={selectedTaskId} 
-                    onClose={closeDetailPanel}
-                  />
-                </div>
-              </Tabs>
+              <div className="w-96 border-l border-border/40 bg-card overflow-y-auto">
+                <TaskDetailPanel 
+                  taskId={selectedTaskId} 
+                  onClose={closeDetailPanel}
+                />
+              </div>
             )}
           </div>
         </div>
