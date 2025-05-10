@@ -11,6 +11,7 @@ interface TaskItemProps {
   level?: number;
   onSelect: (taskId: string) => void;
   onStatusChange: (taskId: string, status: string) => void;
+  isHighPriority?: boolean; // Added this property to fix the TypeScript error
 }
 
 const TaskItem = ({ 
@@ -18,7 +19,8 @@ const TaskItem = ({
   children, 
   level = 0, 
   onSelect, 
-  onStatusChange 
+  onStatusChange,
+  isHighPriority = false // Default value of false
 }: TaskItemProps) => {
   const [expanded, setExpanded] = useState(true);
   const hasChildren = Array.isArray(children) && children.length > 0;
@@ -54,7 +56,8 @@ const TaskItem = ({
       <div 
         className={cn(
           "task-container flex items-start gap-3 hover:bg-accent/5",
-          isCompleted && "opacity-60"
+          isCompleted && "opacity-60",
+          isHighPriority && "border-l-4 border-l-priority-high" // Added styling for high priority tasks
         )}
         style={{ marginLeft: `${level * 1.5}rem` }}
         onClick={() => onSelect(task.id)}
