@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -67,7 +66,7 @@ const CreateTaskModal = ({
         title: title.trim(),
         description: description.trim(),
         due_date: dueDate ? dueDate.toISOString() : null,
-        weight,
+        priority: weight, // Changed from weight to priority to match the Task type
         project_id: project !== "General" ? project : null,
         parent_id: parentTaskId || null,
         user_id: user?.id,
