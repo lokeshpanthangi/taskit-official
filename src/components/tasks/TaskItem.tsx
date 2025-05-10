@@ -5,14 +5,14 @@ import { Star, ChevronRight, ChevronDown, Check, GripVertical } from "lucide-rea
 import { format, isAfter, isBefore, isToday } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Task } from "@/services/taskService";
+import { Task, TaskStatus } from "@/services/taskService";
 
 interface TaskItemProps {
   task: Task;
   children?: React.ReactNode;
   level?: number;
   onSelect: (taskId: string) => void;
-  onStatusChange: (taskId: string, status: string) => void;
+  onStatusChange: (taskId: string, status: TaskStatus) => void;
   isHighPriority?: boolean;
   onPriorityChange?: (taskId: string, priority: number) => void;
   onDragStart?: (e: React.DragEvent, taskId: string) => void;

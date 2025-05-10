@@ -18,7 +18,8 @@ import {
   createTask, 
   updateTask,
   buildTaskHierarchy,
-  Task
+  Task,
+  TaskStatus
 } from "@/services/taskService";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -113,11 +114,11 @@ const Tasks = () => {
       due_date: newTask.dueDate,
       project_id: newTask.project !== "General" ? newTask.project : undefined,
       parent_id: newTask.parentId || null,
-      status: "Not Started"
+      status: "Not Started" as TaskStatus
     });
   };
   
-  const handleStatusChange = (taskId: string, status: string) => {
+  const handleStatusChange = (taskId: string, status: TaskStatus) => {
     updateTaskMutation.mutate({
       id: taskId,
       updates: { status }

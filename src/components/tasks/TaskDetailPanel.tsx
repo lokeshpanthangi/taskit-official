@@ -4,7 +4,7 @@ import { X, Star, Calendar, CheckCircle, Edit, Trash } from "lucide-react";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Progress } from "@/components/ui/progress";
-import { fetchSubtasks, updateSubtask, createSubtask, Subtask } from "@/services/taskService";
+import { fetchSubtasks, updateSubtask, createSubtask, Subtask, TaskStatus } from "@/services/taskService";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";

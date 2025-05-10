@@ -2,11 +2,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays } from "date-fns";
 
+export type TaskStatus = "Not Started" | "In Progress" | "Completed";
+
 export interface Task {
   id: string;
   title: string;
   description?: string;
-  status: "Not Started" | "In Progress" | "Completed";
+  status: TaskStatus;
   priority: number;
   due_date?: string;
   project_id?: string;
