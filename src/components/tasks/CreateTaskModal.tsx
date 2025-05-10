@@ -1,19 +1,30 @@
-
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/sonner";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Star } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider";
-import { fetchProjects } from "@/services/projectService";
-import { fetchTasks } from "@/services/taskService";
-import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { useProjects } from "@/hooks/useProjects";
+import { useTasks } from "@/hooks/useTasks";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 
 interface CreateTaskModalProps {
@@ -22,254 +33,188 @@ interface CreateTaskModalProps {
   onSave: (task: any) => void;
 }
 
-const CreateTaskModal = ({ isOpen, onClose, onSave }: CreateTaskModalProps) => {
+const priorities = [
+  { label: "Low", value: 1 },
+  { label: "Medium", value: 2 },
+  { label: "Normal", value: 3 },
+  { label: "High", value: 4 },
+  { label: "Critical", value: 5 },
+];
+
+const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onSave }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [weight, setWeight] = useState(3);
-  const [projectId, setProjectId] = useState<string | undefined>(undefined);
-  const [parentTaskId, setParentTaskId] = useState<string | undefined>(undefined);
-  const [priorityScore, setPriorityScore] = useState<number | null>(null);
-  const [showSubtasks, setShowSubtasks] = useState(false);
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [project, setProject] = useState("General");
+  const [parentId, setParentId] = useState<string | null>(null);
+  const { projects } = useProjects();
+  const { tasks } = useTasks();
   const { isAuthenticated } = useSupabaseAuth();
-  
-  // Fetch projects for dropdown
-  const { data: projects } = useQuery({
-    queryKey: ['projects'],
-    queryFn: fetchProjects,
-    enabled: isAuthenticated && isOpen,
-  });
-  
-  // Fetch tasks for parent task selection
-  const { data: tasks } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: fetchTasks,
-    enabled: isAuthenticated && isOpen,
-  });
-  
-  // Reset form when modal opens/closes
+
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) {
       setTitle("");
       setDescription("");
-      setDueDate(undefined);
       setWeight(3);
-      setProjectId(undefined);
-      setParentTaskId(undefined);
-      setPriorityScore(null);
+      setDueDate(undefined);
+      setProject("General");
+      setParentId(null);
     }
   }, [isOpen]);
-  
-  // Calculate priority score based on weight and days until due
-  useEffect(() => {
-    if (dueDate && weight) {
-      const daysUntilDue = differenceInDays(dueDate, new Date());
-      // Formula: weight * (10 / (daysUntilDue + 1)) - higher weight and fewer days = higher score
-      let score: number;
-      if (daysUntilDue < 0) {
-        // Overdue tasks get highest priority
-        score = weight * 10;
-      } else {
-        score = weight * (10 / (daysUntilDue + 1));
-      }
-      // Round to 1 decimal place
-      setPriorityScore(Math.round(score * 10) / 10);
-    } else {
-      setPriorityScore(null);
+
+  const handleSubmit = () => {
+    if (!title) {
+      toast({
+        title: "Error",
+        description: "Title is required",
+        variant: "destructive",
+      });
+      return;
     }
-  }, [dueDate, weight]);
-  
-  const handleSave = () => {
-    if (!title.trim()) return;
-    
-    const newTask = {
+
+    const task = {
       title,
       description,
-      dueDate: dueDate ? dueDate.toISOString().split('T')[0] : undefined,
       weight,
-      priorityScore: priorityScore || weight, // Default to weight if no due date
-      project: projectId,
-      parentId: parentTaskId,
+      dueDate: dueDate ? dueDate.toISOString() : null,
+      project,
+      parentId,
     };
-    
-    onSave(newTask);
+
+    onSave(task);
+    onClose();
   };
-  
-  // Helper function to get priority class based on score
-  const getPriorityClass = (score: number | null) => {
-    if (score === null) return "bg-gray-200";
-    if (score >= 8) return "bg-priority-urgent text-white";
-    if (score >= 5) return "bg-priority-high text-white";
-    if (score >= 3) return "bg-priority-medium";
-    return "bg-priority-low";
-  };
-  
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
-          <DialogDescription>
-            Fill in the details for your new task. Title is required.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-4 py-4">
-          {/* Title input */}
-          <div className="space-y-2">
-            <label htmlFor="title" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Title <span className="text-destructive">*</span>
-            </label>
-            <Input 
+    <AlertDialog open={isOpen} onOpenChange={onClose}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Create New Task</AlertDialogTitle>
+          <AlertDialogDescription>
+            Enter the details for your new task.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="title" className="text-right">
+              Title
+            </Label>
+            <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter task title"
-              className="w-full"
-              autoFocus
+              className="col-span-3"
             />
           </div>
-          
-          {/* Description input */}
-          <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="description" className="text-right">
               Description
-            </label>
-            <Textarea
+            </Label>
+            <Input
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter task description"
-              className="resize-none min-h-[100px]"
+              className="col-span-3"
             />
           </div>
-          
-          {/* Parent task selection */}
-          <div className="space-y-2">
-            <label htmlFor="parentTask" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Parent Task (Optional)
-            </label>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="weight" className="text-right">
+              Priority
+            </Label>
             <select
-              id="parentTask"
-              value={parentTaskId || ""}
-              onChange={(e) => setParentTaskId(e.target.value || undefined)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              id="weight"
+              value={weight}
+              onChange={(e) => setWeight(Number(e.target.value))}
+              className="col-span-3 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <option value="">None (Top-level task)</option>
-              {tasks && tasks.map(task => (
-                <option key={task.id} value={task.id}>{task.title}</option>
+              {priorities.map((priority) => (
+                <option key={priority.value} value={priority.value}>
+                  {priority.label}
+                </option>
               ))}
             </select>
           </div>
-          
-          {/* Due date picker */}
-          <div className="space-y-2">
-            <label htmlFor="dueDate" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="dueDate" className="text-right">
               Due Date
-            </label>
+            </Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
-                  id="dueDate"
-                  variant="outline"
+                  variant={"outline"}
                   className={cn(
-                    "w-full justify-start text-left font-normal",
+                    "col-span-3 pl-3 text-left font-normal",
                     !dueDate && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dueDate ? format(dueDate, "PPP") : "Select due date"}
+                  {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
+                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={dueDate}
                   onSelect={setDueDate}
+                  disabled={(date) => date < new Date()}
                   initialFocus
-                  className={cn("p-3 pointer-events-auto")}
                 />
               </PopoverContent>
             </Popover>
           </div>
-          
-          {/* Weight selector with slider */}
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Priority (1-5)
-              </label>
-              <div className="flex items-center text-sm font-medium">
-                {weight === 5 && <span className="text-priority-urgent">Urgent</span>}
-                {weight === 4 && <span className="text-priority-veryhigh">Very High</span>}
-                {weight === 3 && <span className="text-priority-high">High</span>}
-                {weight === 2 && <span className="text-priority-medium">Medium</span>}
-                {weight === 1 && <span className="text-priority-low">Low</span>}
-              </div>
-            </div>
-            <Slider
-              value={[weight]}
-              min={1}
-              max={5}
-              step={1}
-              onValueChange={(value) => setWeight(value[0])}
-              className="py-4"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Lowest</span>
-              <span>Highest</span>
-            </div>
-          </div>
-          
-          {/* Priority Score display */}
-          {priorityScore !== null && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Priority Score (Calculated)
-              </label>
-              <div className="flex items-center gap-2">
-                <div className={cn(
-                  "px-3 py-1 rounded-full text-sm font-medium",
-                  getPriorityClass(priorityScore)
-                )}>
-                  {priorityScore.toFixed(1)}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Based on priority and due date
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Project selection */}
-          <div className="space-y-2">
-            <label htmlFor="project" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="project" className="text-right">
               Project
-            </label>
+            </Label>
             <select
               id="project"
-              value={projectId || ""}
-              onChange={(e) => setProjectId(e.target.value || undefined)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={project}
+              onChange={(e) => setProject(e.target.value)}
+              className="col-span-3 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <option value="">No Project</option>
-              {projects && projects.map(project => (
-                <option key={project.id} value={project.id}>{project.name}</option>
-              ))}
+              <option value="General">General</option>
+              {isAuthenticated && projects &&
+                projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="parentId" className="text-right">
+              Parent Task
+            </Label>
+            <select
+              id="parentId"
+              value={parentId || ""}
+              onChange={(e) =>
+                setParentId(e.target.value === "" ? null : e.target.value)
+              }
+              className="col-span-3 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="">None</option>
+              {isAuthenticated && tasks &&
+                tasks.map((task) => (
+                  <option key={task.id} value={task.id}>
+                    {task.title}
+                  </option>
+                ))}
             </select>
           </div>
         </div>
-        
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={!title.trim()}>
-            Save Task
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleSubmit}>Create</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
 

@@ -14,7 +14,7 @@ const Settings = () => {
   const [saving, setSaving] = useState(false);
   
   // Profile form state
-  const [name, setName] = useState(user?.name || "");
+  const [name, setName] = useState(user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : "");
   const [email, setEmail] = useState(user?.email || "");
   
   // Mock save function with delay
@@ -54,8 +54,8 @@ const Settings = () => {
                 <div className="flex flex-col md:flex-row md:items-center gap-6">
                   <div>
                     <Avatar className="h-24 w-24">
-                      <AvatarImage src={user?.avatarUrl || ""} alt={user?.name || ""} />
-                      <AvatarFallback className="text-lg">{user?.name?.charAt(0) || "U"}</AvatarFallback>
+                      <AvatarImage src={user?.avatar_url || ""} alt={user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : ""} />
+                      <AvatarFallback className="text-lg">{user?.first_name?.charAt(0) || "U"}</AvatarFallback>
                     </Avatar>
                   </div>
                   
