@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   AlertDialog,
@@ -25,7 +26,7 @@ import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useProjects } from "@/hooks/useProjects";
 import { useTasks } from "@/hooks/useTasks";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -50,7 +51,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onSa
   const [parentId, setParentId] = useState<string | null>(null);
   const { projects } = useProjects();
   const { tasks } = useTasks();
-  const { isAuthenticated } = useSupabaseAuth();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (!isOpen) {
@@ -66,7 +67,6 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onSa
   const handleSubmit = () => {
     if (!title) {
       toast({
-        title: "Error",
         description: "Title is required",
         variant: "destructive",
       });
