@@ -1,73 +1,156 @@
-# Welcome to your Lovable project
+# 🚀 TaskPal: Your Ultimate Task & Project Management App
 
-## Project info
+Welcome to **TaskPal**! 🎉
 
-**URL**: https://lovable.dev/projects/711ad18b-2c47-4b6e-b8d0-ba159ae35f7a
+TaskPal is a modern, full-featured task and project management application built for productivity, collaboration, and clarity. With a beautiful UI, robust backend, and real-time features, TaskPal helps you organize your work and life with ease.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🛠️ Tech Stack
 
-**Use Lovable**
+- **Frontend:** React 18 + TypeScript + Vite
+- **UI:** shadcn/ui, Tailwind CSS, Lucide Icons
+- **State/Data:** React Query, React Context
+- **Backend:** Supabase (Postgres, Auth, Realtime)
+- **Other:** date-fns, Zod, Radix UI, Sonner (toasts)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/711ad18b-2c47-4b6e-b8d0-ba159ae35f7a) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🚦 Features & Functionality
 
-**Use your preferred IDE**
+### 👤 Authentication
+- Secure sign up & login (email/password)
+- First & last name captured at registration
+- Password reset & email confirmation
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 📝 Task Management
+- Create, edit, delete, and view tasks
+- Set title, description, due date, and priority (1-5)
+- **Task Hierarchy:** Nest tasks as subtasks (parent/child)
+- Drag & drop support for task reordering (if enabled)
+- Mark tasks as completed
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 📅 Calendar & Deadlines
+- Visual calendar view for all tasks
+- Due date picker with date-fns formatting
+- Filter and search tasks by date, priority, or status
 
-Follow these steps:
+### 📊 Projects
+- Create and manage projects
+- Assign tasks to projects
+- Recent projects sidebar
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 🏷️ Priorities & Status
+- Five-level priority system (Very Low → Urgent)
+- Status: Not Started, In Progress, Completed
+- Visual priority tags and status badges
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 🔔 Notifications & Reminders
+- **Notification Bell:** See all notifications in a dropdown
+- **Due Date Alerts:** Automatic notifications for tasks due today/tomorrow
+- **In-App Toasts:** Real-time toast popups for due/overdue tasks
+- Mark notifications as read/unread
+- Real-time updates via Supabase
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 🌗 Theming & UX
+- Dark mode by default (next-themes)
+- Responsive, accessible, and keyboard-friendly
+- Modern, animated UI with shadcn/ui
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+---
+
+## 🏗️ Project Structure
+
+```
+├── src/
+│   ├── components/         # Reusable UI & app components
+│   ├── pages/              # Route-based pages (Dashboard, Tasks, Auth, etc.)
+│   ├── layouts/            # App and Auth layouts
+│   ├── services/           # API & business logic (tasks, auth, notifications)
+│   ├── hooks/              # Custom React hooks
+│   ├── contexts/           # React context providers (Auth, etc.)
+│   ├── lib/                # Utilities and helpers
+│   └── integrations/       # Supabase client setup
+├── public/                 # Static assets
+├── supabase/               # Supabase config
+├── tailwind.config.ts      # Tailwind CSS config
+├── vite.config.ts          # Vite config
+└── ...
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## ⚡ Getting Started
 
-**Use GitHub Codespaces**
+### 1. Clone & Install
+```sh
+git clone <YOUR_GIT_URL>
+cd <YOUR_PROJECT_NAME>
+npm install
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### 2. Environment Setup
+- Configure your Supabase project and copy the API keys to `.env` if needed.
+- Update any other environment variables as required.
 
-## What technologies are used for this project?
+### 3. Run the App
+```sh
+npm run dev
+```
+Visit [http://localhost:5173](http://localhost:5173) 🚀
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🧩 Key Components
 
-## How can I deploy this project?
+- **Task Creation Modal:** Add tasks with title, description, due date, priority, and parent task.
+- **Task Hierarchy:** Visualize and manage nested tasks.
+- **Notification Center:** Bell icon with dropdown for all notifications (due, reminders, system).
+- **In-App Toasts:** Real-time popups for important events (task due, completed, etc.).
+- **Sidebar:** Navigation, recent projects, and personalized welcome message.
+- **Auth Pages:** Login, Register (with name), Forgot/Reset Password.
 
-Simply open [Lovable](https://lovable.dev/projects/711ad18b-2c47-4b6e-b8d0-ba159ae35f7a) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
+## 🔔 Notifications Logic
+- Tasks due today/tomorrow trigger both a notification and a toast.
+- Notifications are shown in the bell dropdown and can be marked as read.
+- Real-time updates via Supabase channel subscriptions.
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🔒 Security & Best Practices
+- All API calls are authenticated via Supabase Auth.
+- User data is isolated and secure.
+- Input validation with Zod and form-level checks.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+---
+
+## 🛠️ Customization
+- Easily extend with new features (e.g., tags, comments, file uploads)
+- Theming via Tailwind and next-themes
+- Modular, maintainable codebase
+
+---
+
+## 🤝 Contributing
+PRs and issues are welcome! Please open an issue for bugs or feature requests.
+
+---
+
+## 📄 License
+MIT
+
+---
+
+## 🙏 Acknowledgements
+- [Supabase](https://supabase.com/)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [Vite](https://vitejs.dev/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Radix UI](https://www.radix-ui.com/)
+- [Lucide Icons](https://lucide.dev/)
+
+---
+
+> Made with ❤️ for productivity!
