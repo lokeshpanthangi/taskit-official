@@ -40,6 +40,7 @@ export const fetchTasks = async () => {
       *,
       projects(name)
     `)
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false });
     
   if (error) {
@@ -77,6 +78,10 @@ export const fetchTasks = async () => {
 };
 
 export const fetchTask = async (taskId: string) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error("User not authenticated");
+  
   const { data, error } = await supabase
     .from("tasks")
     .select(`
@@ -84,6 +89,7 @@ export const fetchTask = async (taskId: string) => {
       projects(name)
     `)
     .eq("id", taskId)
+    .eq("user_id", user.id)
     .single();
     
   if (error) {
@@ -139,11 +145,16 @@ export const updateTask = async (taskId: string, updates: Partial<Task>) => {
 };
 
 export const deleteTask = async (taskId: string) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error("User not authenticated");
+  
   // First, find any child tasks and update them to remove the parent_id
   const { data: childTasks, error: childrenError } = await supabase
     .from("tasks")
     .select("id")
-    .eq("parent_id", taskId);
+    .eq("parent_id", taskId)
+    .eq("user_id", user.id);
     
   if (childrenError) {
     console.error("Error finding child tasks:", childrenError);
@@ -165,6 +176,19 @@ export const deleteTask = async (taskId: string) => {
     }
   }
   
+  // First verify the task belongs to the current user
+  const { data: taskData, error: taskError } = await supabase
+    .from("tasks")
+    .select("id")
+    .eq("id", taskId)
+    .eq("user_id", user.id)
+    .single();
+    
+  if (taskError || !taskData) {
+    console.error("Error verifying task ownership:", taskError);
+    throw new Error("Task not found or not authorized");
+  }
+  
   // Delete all subtasks
   const { error: subtasksError } = await supabase
     .from("subtasks")
@@ -180,7 +204,8 @@ export const deleteTask = async (taskId: string) => {
   const { error } = await supabase
     .from("tasks")
     .delete()
-    .eq("id", taskId);
+    .eq("id", taskId)
+    .eq("user_id", user.id);
     
   if (error) {
     console.error("Error deleting task:", error);
@@ -192,6 +217,10 @@ export const deleteTask = async (taskId: string) => {
 
 // Handle removing a task from being a subtask (but not deleting it)
 export const removeTaskFromParent = async (taskId: string) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error("User not authenticated");
+  
   const { data, error } = await supabase
     .from("tasks")
     .update({
@@ -199,6 +228,7 @@ export const removeTaskFromParent = async (taskId: string) => {
       updated_at: new Date().toISOString(),
     })
     .eq("id", taskId)
+    .eq("user_id", user.id)
     .select()
     .single();
     
@@ -212,6 +242,23 @@ export const removeTaskFromParent = async (taskId: string) => {
 
 // Subtasks management
 export const fetchSubtasks = async (taskId: string) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error("User not authenticated");
+  
+  // First verify the task belongs to the current user
+  const { data: taskData, error: taskError } = await supabase
+    .from("tasks")
+    .select("id")
+    .eq("id", taskId)
+    .eq("user_id", user.id)
+    .single();
+    
+  if (taskError || !taskData) {
+    console.error("Error verifying task ownership:", taskError);
+    throw new Error("Task not found or not authorized");
+  }
+  
   const { data, error } = await supabase
     .from("subtasks")
     .select("*")
@@ -227,6 +274,23 @@ export const fetchSubtasks = async (taskId: string) => {
 };
 
 export const createSubtask = async (subtask: Omit<Subtask, "id" | "created_at">) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error("User not authenticated");
+  
+  // First verify the task belongs to the current user
+  const { data: taskData, error: taskError } = await supabase
+    .from("tasks")
+    .select("id")
+    .eq("id", subtask.task_id)
+    .eq("user_id", user.id)
+    .single();
+    
+  if (taskError || !taskData) {
+    console.error("Error verifying task ownership:", taskError);
+    throw new Error("Task not found or not authorized");
+  }
+  
   const { data, error } = await supabase
     .from("subtasks")
     .insert(subtask)
@@ -242,6 +306,35 @@ export const createSubtask = async (subtask: Omit<Subtask, "id" | "created_at">)
 };
 
 export const updateSubtask = async (subtaskId: string, updates: Partial<Subtask>) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error("User not authenticated");
+  
+  // First get the subtask to find its task_id
+  const { data: subtaskData, error: subtaskError } = await supabase
+    .from("subtasks")
+    .select("task_id")
+    .eq("id", subtaskId)
+    .single();
+    
+  if (subtaskError || !subtaskData) {
+    console.error("Error finding subtask:", subtaskError);
+    throw new Error("Subtask not found");
+  }
+  
+  // Then verify the task belongs to the current user
+  const { data: taskData, error: taskError } = await supabase
+    .from("tasks")
+    .select("id")
+    .eq("id", subtaskData.task_id)
+    .eq("user_id", user.id)
+    .single();
+    
+  if (taskError || !taskData) {
+    console.error("Error verifying task ownership:", taskError);
+    throw new Error("Task not found or not authorized");
+  }
+  
   const { data, error } = await supabase
     .from("subtasks")
     .update(updates)
@@ -258,6 +351,35 @@ export const updateSubtask = async (subtaskId: string, updates: Partial<Subtask>
 };
 
 export const deleteSubtask = async (subtaskId: string) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error("User not authenticated");
+  
+  // First get the subtask to find its task_id
+  const { data: subtaskData, error: subtaskError } = await supabase
+    .from("subtasks")
+    .select("task_id")
+    .eq("id", subtaskId)
+    .single();
+    
+  if (subtaskError || !subtaskData) {
+    console.error("Error finding subtask:", subtaskError);
+    throw new Error("Subtask not found");
+  }
+  
+  // Then verify the task belongs to the current user
+  const { data: taskData, error: taskError } = await supabase
+    .from("tasks")
+    .select("id")
+    .eq("id", subtaskData.task_id)
+    .eq("user_id", user.id)
+    .single();
+    
+  if (taskError || !taskData) {
+    console.error("Error verifying task ownership:", taskError);
+    throw new Error("Task not found or not authorized");
+  }
+  
   const { error } = await supabase
     .from("subtasks")
     .delete()

@@ -32,11 +32,23 @@ const CalendarView = ({ events, onEventClick, onDateClick }: CalendarViewProps) 
   
   // Month navigation
   const goToPreviousMonth = () => {
-    setSelectedDate(prev => subMonths(prev, 1));
+    if (viewMode === "month") {
+      setSelectedDate(prev => subMonths(prev, 1));
+    } else if (viewMode === "week") {
+      setSelectedDate(prev => addDays(prev, -7));
+    } else {
+      setSelectedDate(prev => addDays(prev, -1));
+    }
   };
   
   const goToNextMonth = () => {
-    setSelectedDate(prev => addMonths(prev, 1));
+    if (viewMode === "month") {
+      setSelectedDate(prev => addMonths(prev, 1));
+    } else if (viewMode === "week") {
+      setSelectedDate(prev => addDays(prev, 7));
+    } else {
+      setSelectedDate(prev => addDays(prev, 1));
+    }
   };
   
   const goToToday = () => {
@@ -72,7 +84,7 @@ const CalendarView = ({ events, onEventClick, onDateClick }: CalendarViewProps) 
     
     // Add empty cells for days before the first day of month
     for (let i = 0; i < firstDayOfMonth; i++) {
-      days.push(<div key={`empty-${i}`} className="p-2 border border-border/50 bg-muted/20 min-h-[100px]"></div>);
+      days.push(<div key={`empty-${i}`} className="p-2 border border-border/50 bg-background/80 h-full min-h-[85px] rounded-md m-[1px]"></div>);
     }
     
     // Add days of the month
@@ -87,13 +99,13 @@ const CalendarView = ({ events, onEventClick, onDateClick }: CalendarViewProps) 
           key={day}
           onClick={() => onDateClick && onDateClick(date)}
           className={cn(
-            "p-2 border border-border/50 min-h-[100px] relative cursor-pointer hover:bg-muted/30 transition-colors",
-            isCurrentDay ? "bg-primary/5 border-primary/30" : ""
+            "p-2 border border-border/50 h-full min-h-[85px] relative cursor-pointer hover:bg-accent/10 transition-colors rounded-md m-[1px]",
+            isCurrentDay ? "bg-primary/10 border-primary/50 shadow-sm" : "bg-card/80"
           )}
         >
           <span className={cn(
-            "text-sm absolute top-1 right-1 h-6 w-6 flex items-center justify-center rounded-full",
-            isCurrentDay ? "bg-primary text-primary-foreground" : ""
+            "text-sm absolute top-2 right-2 h-7 w-7 flex items-center justify-center rounded-full font-medium",
+            isCurrentDay ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted/40"
           )}>
             {day}
           </span>
@@ -143,39 +155,44 @@ const CalendarView = ({ events, onEventClick, onDateClick }: CalendarViewProps) 
   };
 
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle>Calendar View</CardTitle>
+    <Card className="w-full h-full flex flex-col border-primary/10 bg-gradient-to-b from-background to-background/95 shadow-md overflow-hidden">
+      <CardHeader className="pb-0 flex-shrink-0">
+        <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 sm:items-center sm:justify-between">
+          <CardTitle className="text-xl flex items-center gap-2">
+            <span>{format(selectedDate, 'MMMM yyyy')}</span>
+            <div className="text-xs bg-primary/10 px-2 py-1 rounded-full">
+              {viewMode === "month" ? "Month View" : viewMode === "week" ? "Week View" : "Day View"}
+            </div>
+          </CardTitle>
           
           <div className="flex items-center space-x-2">
-            <Tabs defaultValue={viewMode} value={viewMode} onValueChange={(v) => setViewMode(v as "month" | "week" | "day")}>
-              <TabsList>
-                <TabsTrigger value="month">Month</TabsTrigger>
-                <TabsTrigger value="week">Week</TabsTrigger>
-                <TabsTrigger value="day">Day</TabsTrigger>
+            <div className="flex items-center gap-1 bg-primary/5 p-1 rounded-lg">
+              <Button variant="ghost" size="icon" onClick={goToPreviousMonth} className="h-8 w-8">
+                <ChevronLeft className="h-4 w-4" />
+                <span className="sr-only">Previous month</span>
+              </Button>
+              
+              <Button variant="outline" onClick={goToToday} className="h-8 text-xs px-2">
+                Today
+              </Button>
+              
+              <Button variant="ghost" size="icon" onClick={goToNextMonth} className="h-8 w-8">
+                <ChevronRight className="h-4 w-4" />
+                <span className="sr-only">Next month</span>
+              </Button>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Tabs defaultValue="month" value={viewMode} onValueChange={(value) => setViewMode(value as "month" | "week" | "day")} className="w-full">
+              <TabsList className="bg-primary/10 p-1 rounded-lg">
+                <TabsTrigger value="month" className="text-xs px-3 py-1">Month</TabsTrigger>
+                <TabsTrigger value="week" className="text-xs px-3 py-1">Week</TabsTrigger>
+                <TabsTrigger value="day" className="text-xs px-3 py-1">Day</TabsTrigger>
               </TabsList>
-
+              
               <div className="mb-4 flex items-center justify-between mt-4">
                 <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  
-                  <h2 className="text-lg font-medium">
-                    {format(selectedDate, 'MMMM yyyy')}
-                  </h2>
-                  
-                  <Button variant="outline" size="icon" onClick={goToNextMonth}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button variant="outline" size="sm" onClick={goToToday}>
-                    Today
-                  </Button>
-                </div>
-                
-                <div className="flex items-center gap-2">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger>
@@ -205,11 +222,11 @@ const CalendarView = ({ events, onEventClick, onDateClick }: CalendarViewProps) 
                 </div>
               </div>
 
-              <TabsContent value="month" className="mt-0">
-                <div className="grid grid-cols-7 gap-px">
-                  {/* Weekday headers */}
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="p-2 font-medium text-center text-sm">
+              <TabsContent value="month" className="mt-0 h-full">
+                <div className="grid grid-cols-7 gap-2 h-full p-2">
+                  {/* Day headers */}
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                    <div key={day} className="p-2 text-center font-semibold text-sm mb-1 text-foreground/80">
                       {day}
                     </div>
                   ))}
@@ -255,12 +272,12 @@ const CalendarView = ({ events, onEventClick, onDateClick }: CalendarViewProps) 
                             key={event.id}
                             onClick={() => onEventClick(event.id)}
                             className={cn(
-                              "mb-1 p-2 rounded text-sm cursor-pointer",
-                              event.priority === 5 ? "bg-priority-urgent text-white" :
-                              event.priority === 4 ? "bg-priority-high text-white" :
-                              event.priority === 3 ? "bg-priority-medium text-white" :
-                              event.status === "Completed" ? "bg-green-500/20 text-green-700 dark:text-green-300" :
-                              "bg-accent/20"
+                              "mb-1.5 p-2 rounded-md text-sm cursor-pointer border border-transparent transition-all hover:translate-y-[-1px] shadow-sm",
+                              event.priority === 5 ? "bg-red-500/90 text-white hover:bg-red-500 hover:shadow-md" :
+                              event.priority === 4 ? "bg-orange-500/90 text-white hover:bg-orange-500 hover:shadow-md" :
+                              event.priority === 3 ? "bg-yellow-500/90 text-white hover:bg-yellow-500 hover:shadow-md" :
+                              event.status === "Completed" ? "bg-green-500/20 text-green-700 dark:text-green-300 hover:bg-green-500/30" :
+                              "bg-blue-500/20 text-blue-700 dark:text-blue-300 hover:bg-blue-500/30"
                             )}
                           >
                             <div className="font-medium truncate">{event.title}</div>
@@ -331,8 +348,8 @@ const CalendarView = ({ events, onEventClick, onDateClick }: CalendarViewProps) 
         </div>
       </CardHeader>
       
-      <CardContent>
-        {/* This space is now controlled by TabsContent components above */}
+      <CardContent className="flex-grow overflow-auto p-0">
+        {/* Content is controlled by TabsContent components above */}
       </CardContent>
     </Card>
   );

@@ -43,8 +43,8 @@ const Landing = () => {
         <div className="lg:w-1/2 space-y-8 py-12 lg:py-24">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
             <span className="text-primary">Organize</span> your tasks.<br />
-            <span className="bg-gradient-to-r from-[#4ADE80] via-[#FACC15] to-[#FB7185] bg-clip-text text-transparent">
-              Be Part of the Solution
+            <span>
+              <span className="text-white">Be</span> <span className="text-blue-500">Part of the Solution</span>
             </span>
           </h1>
           
@@ -65,8 +65,8 @@ const Landing = () => {
         
         <div className="lg:w-1/2 py-12 lg:py-24 flex justify-center">
           <div className="relative">
-            <div className="w-[500px] h-[400px] bg-accent/10 rounded-2xl flex items-center justify-center overflow-hidden">
-              <img src="/lovable-uploads/d402e882-684f-46f7-bafd-ddfc361e79bd.png" alt="TaskPal" className="w-full h-auto" />
+            <div className="w-[650px] h-[550px] rounded-2xl flex items-center justify-center overflow-hidden bg-transparent">
+              <img src="/lovable-uploads/taskpal-pure-animation.svg" alt="TaskPal Visualization" className="w-[120%] h-auto" />
             </div>
             <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-primary/20 rounded-full blur-2xl"></div>
             <div className="absolute -top-6 -left-6 w-32 h-32 bg-accent/20 rounded-full blur-2xl"></div>

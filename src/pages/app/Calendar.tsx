@@ -69,7 +69,7 @@ const Calendar = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in h-full">
+    <div className="space-y-4 animate-fade-in h-full w-full max-w-[200%] mx-auto overflow-x-auto pb-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Calendar</h1>
@@ -105,7 +105,7 @@ const Calendar = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="h-[calc(100%-5rem)]">
+        <div className="w-full h-[calc(100vh-20rem)] min-h-[650px] overflow-hidden">
           <CalendarView 
             events={calendarEvents} 
             onEventClick={handleEventClick} 

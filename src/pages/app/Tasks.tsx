@@ -334,11 +334,19 @@ const Tasks = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {hierarchicalTasks.length > 0 ? (
+                {tasks && tasks.length > 0 && hierarchicalTasks.length === 0 && searchQuery ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No tasks found matching "{searchQuery}". Try a different search term.</p>
+                  </div>
+                ) : tasks && tasks.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No tasks found. Create a new task to get started.</p>
+                  </div>
+                ) : hierarchicalTasks.length > 0 ? (
                   renderTaskHierarchy(hierarchicalTasks)
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-muted-foreground">No tasks found. Try a different search term or create a new task.</p>
+                    <p className="text-muted-foreground">Loading tasks...</p>
                   </div>
                 )}
               </div>

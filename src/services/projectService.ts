@@ -15,9 +15,14 @@ export interface Project {
 }
 
 export const fetchProjects = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error("User not authenticated");
+  
   const { data, error } = await supabase
     .from("projects")
     .select("*")
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false });
     
   if (error) {
@@ -29,10 +34,15 @@ export const fetchProjects = async () => {
 };
 
 export const fetchProject = async (projectId: string) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error("User not authenticated");
+  
   const { data, error } = await supabase
     .from("projects")
     .select("*")
     .eq("id", projectId)
+    .eq("user_id", user.id)
     .single();
     
   if (error) {
@@ -68,10 +78,15 @@ export const createProject = async (project: Omit<Project, "id" | "user_id" | "c
 };
 
 export const updateProject = async (projectId: string, updates: Partial<Project>) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error("User not authenticated");
+  
   const { data, error } = await supabase
     .from("projects")
     .update(updates)
     .eq("id", projectId)
+    .eq("user_id", user.id)
     .select()
     .single();
     
@@ -84,11 +99,29 @@ export const updateProject = async (projectId: string, updates: Partial<Project>
 };
 
 export const deleteProject = async (projectId: string) => {
-  // First, delete all tasks associated with this project
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error("User not authenticated");
+  
+  // First, verify project ownership
+  const { data: projectData, error: projectError } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
+    .eq("user_id", user.id)
+    .single();
+    
+  if (projectError || !projectData) {
+    console.error("Error verifying project ownership:", projectError);
+    throw new Error("Project not found or not authorized");
+  }
+  
+  // Delete all tasks associated with this project
   const { error: tasksError } = await supabase
     .from("tasks")
     .delete()
-    .eq("project_id", projectId);
+    .eq("project_id", projectId)
+    .eq("user_id", user.id);
     
   if (tasksError) {
     console.error("Error deleting project tasks:", tasksError);
@@ -99,7 +132,8 @@ export const deleteProject = async (projectId: string) => {
   const { error } = await supabase
     .from("projects")
     .delete()
-    .eq("id", projectId);
+    .eq("id", projectId)
+    .eq("user_id", user.id);
     
   if (error) {
     console.error("Error deleting project:", error);
@@ -110,11 +144,29 @@ export const deleteProject = async (projectId: string) => {
 };
 
 export const calculateProjectProgress = async (projectId: string) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error("User not authenticated");
+  
+  // First, verify project ownership
+  const { data: projectData, error: projectError } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
+    .eq("user_id", user.id)
+    .single();
+    
+  if (projectError || !projectData) {
+    console.error("Error verifying project ownership:", projectError);
+    throw new Error("Project not found or not authorized");
+  }
+  
   // Get tasks for this project
   const { data: tasks, error } = await supabase
     .from("tasks")
     .select("status")
-    .eq("project_id", projectId);
+    .eq("project_id", projectId)
+    .eq("user_id", user.id);
     
   if (error) {
     console.error("Error calculating project progress:", error);
