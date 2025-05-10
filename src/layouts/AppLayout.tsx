@@ -52,10 +52,12 @@ const AppLayout = () => {
             
             {/* Right panel for task details (conditionally rendered) */}
             {isDetailPanelOpen && (
-              <TaskDetailPanel 
-                taskId={selectedTaskId} 
-                onClose={closeDetailPanel}
-              />
+              <div className="w-96 border-l bg-background overflow-y-auto">
+                <TaskDetailPanel 
+                  taskId={selectedTaskId} 
+                  onClose={closeDetailPanel}
+                />
+              </div>
             )}
           </div>
         </div>
