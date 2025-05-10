@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,8 +40,6 @@ const Calendar = () => {
       status: task.status
     }));
   };
-
-  const calendarEvents = mapTasksToEvents(tasks);
 
   // Handle clicking on an event
   const handleEventClick = (eventId: string) => {
