@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { useProjects } from "@/hooks/useProjects";
 import { useTasks } from "@/hooks/useTasks";
-import { createTask } from "@/services/taskService";
+import { createTask, TaskStatus } from "@/services/taskService";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { toast } from "@/components/ui/sonner";
 
@@ -70,7 +70,7 @@ const CreateTaskModal = ({
         project_id: project !== "General" ? project : null,
         parent_id: parentTaskId || null,
         user_id: user?.id,
-        status: "todo"
+        status: "Not Started" as TaskStatus // Using proper TaskStatus type
       };
       
       await createTask(taskData);
