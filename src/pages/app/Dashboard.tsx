@@ -297,7 +297,7 @@ const Dashboard = () => {
             <div className="grid grid-cols-2 gap-4">
               <Button 
                 variant="outline" 
-                className="flex flex-col h-24 items-center justify-center gap-2 hover:bg-accent/10 animate-scale-in"
+                className="flex flex-col h-24 items-center justify-center gap-2 hover:bg-primary/10 animate-scale-in quick-access-button"
                 onClick={() => window.location.href = "/tasks"}
               >
                 <List size={24} />
@@ -306,7 +306,7 @@ const Dashboard = () => {
               
               <Button 
                 variant="outline" 
-                className="flex flex-col h-24 items-center justify-center gap-2 hover:bg-accent/10 animate-scale-in [animation-delay:100ms]"
+                className="flex flex-col h-24 items-center justify-center gap-2 hover:bg-primary/10 animate-scale-in [animation-delay:100ms] quick-access-button"
                 onClick={() => window.location.href = "/calendar"}
               >
                 <Calendar size={24} />
@@ -315,7 +315,7 @@ const Dashboard = () => {
               
               <Button 
                 variant="outline" 
-                className="flex flex-col h-24 items-center justify-center gap-2 hover:bg-accent/10 animate-scale-in [animation-delay:200ms]"
+                className="flex flex-col h-24 items-center justify-center gap-2 hover:bg-primary/10 animate-scale-in [animation-delay:200ms] quick-access-button"
                 onClick={() => window.location.href = "/projects"}
               >
                 <Filter size={24} />
@@ -324,7 +324,7 @@ const Dashboard = () => {
               
               <Button 
                 variant="outline" 
-                className="flex flex-col h-24 items-center justify-center gap-2 hover:bg-accent/10 animate-scale-in [animation-delay:300ms]"
+                className="flex flex-col h-24 items-center justify-center gap-2 hover:bg-primary/10 animate-scale-in [animation-delay:300ms] quick-access-button"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               >
                 {theme === "dark" ? (
@@ -347,7 +347,6 @@ const Dashboard = () => {
   );
 };
 
-// Add Sun and Moon icons at the end of the file
 function Sun(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg

@@ -204,6 +204,11 @@
   .hover-lift {
     @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-md;
   }
+
+  /* Quick access button hover */
+  .quick-access-button:hover {
+    @apply bg-primary/15;
+  }
   
   @keyframes fadeIn {
     from {
@@ -248,4 +253,3 @@
     }
   }
 }
-
