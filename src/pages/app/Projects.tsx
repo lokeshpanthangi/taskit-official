@@ -1,14 +1,12 @@
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { toast } from "@/components/ui/sonner";
 import CreateProjectModal from "@/components/projects/CreateProjectModal";
+import ProjectCard from "@/components/projects/ProjectCard";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
-import { fetchProjects, createProject, updateProject, deleteProject, Project } from "@/services/projectService";
+import { fetchProjects, createProject } from "@/services/projectService";
 import { fetchTasks } from "@/services/taskService";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -50,7 +48,7 @@ const Projects = () => {
       description: newProject.description,
       start_date: newProject.startDate,
       due_date: newProject.dueDate,
-      progress: 0,
+      priority: newProject.priority,
       tags: newProject.tags,
     });
     setIsCreateModalOpen(false);
@@ -79,6 +77,19 @@ const Projects = () => {
     
     return members;
   };
+  
+  // Get task counts for each project
+  const getProjectTaskCounts = (projectId: string) => {
+    if (!tasks) return { total: 0, completed: 0 };
+    
+    const projectTasks = tasks.filter(task => task.project_id === projectId);
+    const completed = projectTasks.filter(task => task.status === "Completed").length;
+    
+    return {
+      total: projectTasks.length,
+      completed
+    };
+  };
 
   if (authLoading || projectsLoading) {
     return (
@@ -102,7 +113,7 @@ const Projects = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in w-full">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="font-semibold tracking-tight">Projects</h1>
@@ -119,74 +130,15 @@ const Projects = () => {
         <div className="grid gap-6">
           {projects.map((project) => {
             const team = getProjectTeamMembers(project.id);
+            const taskCount = getProjectTaskCounts(project.id);
             
             return (
-              <Card key={project.id} className="overflow-hidden gradient-border bg-card">
-                <CardHeader className="bg-muted/30">
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                    <div>
-                      <CardTitle className="text-xl">{project.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {project.description}
-                      </p>
-                    </div>
-                    
-                    <Button variant="outline" size="sm" onClick={() => toast.info("Project details view coming soon")}>View Details</Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="grid gap-6 md:grid-cols-3">
-                    <div>
-                      <h3 className="text-sm font-medium mb-2">Progress</h3>
-                      <div className="flex items-center space-x-2">
-                        <Progress value={project.progress} className="h-2" />
-                        <span className="text-sm font-medium">{project.progress}%</span>
-                      </div>
-                      <div className="mt-4 flex items-center space-x-2 text-sm text-muted-foreground">
-                        <span>
-                          {tasks ? 
-                            `${tasks.filter(task => task.project_id === project.id && task.status === "Completed").length}/${tasks.filter(task => task.project_id === project.id).length} tasks completed` 
-                            : "Loading tasks..."}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium mb-2">Team</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {team.map((member, index) => (
-                          <div key={index} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
-                            {member.split(" ").map(n => n[0]).join("")}
-                          </div>
-                        ))}
-                        <Button variant="outline" size="icon" className="h-8 w-8 rounded-full p-0" onClick={() => toast.info("Team member functionality coming soon")}>
-                          <Plus className="h-4 w-4" />
-                          <span className="sr-only">Add team member</span>
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium mb-2">Details</h3>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Start Date</span>
-                          <span>{new Date(project.start_date).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Due Date</span>
-                          <span>{new Date(project.due_date).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex gap-2 flex-wrap">
-                          {project.tags && project.tags.map((tag, index) => (
-                            <Badge key={index} variant="secondary">{tag}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <ProjectCard 
+                key={project.id}
+                project={project}
+                teamMembers={team}
+                taskCount={taskCount}
+              />
             );
           })}
         </div>

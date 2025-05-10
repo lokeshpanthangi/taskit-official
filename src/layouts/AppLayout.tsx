@@ -30,12 +30,12 @@ const AppLayout = () => {
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen overflow-hidden bg-background">
+      <div className="flex h-screen w-full overflow-hidden bg-background">
         {/* Main sidebar */}
         <Sidebar />
         
         {/* Main content area */}
-        <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex flex-col flex-1 overflow-hidden w-full">
           {/* Top header */}
           <div className="flex items-center justify-between p-4 border-b border-border/40">
             <Header />
@@ -45,9 +45,9 @@ const AppLayout = () => {
           </div>
           
           {/* Content with optional right panel */}
-          <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-1 overflow-hidden w-full">
             {/* Main scrollable content */}
-            <main className="flex-1 overflow-y-auto p-6">
+            <main className="flex-1 overflow-y-auto p-6 w-full">
               <Outlet context={{ toggleDetailPanel }} />
             </main>
             

@@ -11,6 +11,7 @@ export interface Project {
   user_id: string;
   tags: string[];
   created_at?: string;
+  priority: number;
 }
 
 export const fetchProjects = async () => {
@@ -42,7 +43,7 @@ export const fetchProject = async (projectId: string) => {
   return data as Project;
 };
 
-export const createProject = async (project: Omit<Project, "id" | "user_id" | "created_at">) => {
+export const createProject = async (project: Omit<Project, "id" | "user_id" | "created_at" | "progress">) => {
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
   
@@ -52,6 +53,7 @@ export const createProject = async (project: Omit<Project, "id" | "user_id" | "c
     .from("projects")
     .insert({
       ...project,
+      progress: 0,
       user_id: user.id,
     })
     .select()
@@ -82,6 +84,18 @@ export const updateProject = async (projectId: string, updates: Partial<Project>
 };
 
 export const deleteProject = async (projectId: string) => {
+  // First, delete all tasks associated with this project
+  const { error: tasksError } = await supabase
+    .from("tasks")
+    .delete()
+    .eq("project_id", projectId);
+    
+  if (tasksError) {
+    console.error("Error deleting project tasks:", tasksError);
+    throw tasksError;
+  }
+  
+  // Then delete the project
   const { error } = await supabase
     .from("projects")
     .delete()

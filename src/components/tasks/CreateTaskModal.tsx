@@ -1,101 +1,68 @@
 
 import { useState, useEffect } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { useProjects } from "@/hooks/useProjects";
 import { useTasks } from "@/hooks/useTasks";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface CreateTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (task: any) => void;
+  parentTaskId?: string;
 }
 
-const priorities = [
-  { label: "Low", value: 1 },
-  { label: "Medium", value: 2 },
-  { label: "Normal", value: 3 },
-  { label: "High", value: 4 },
-  { label: "Critical", value: 5 },
-];
-
-const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onSave }) => {
+const CreateTaskModal = ({ isOpen, onClose, onSave, parentTaskId }: CreateTaskModalProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [weight, setWeight] = useState(3);
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [weight, setWeight] = useState<number>(3); // Default weight is 3 (medium)
   const [project, setProject] = useState("General");
-  const [parentId, setParentId] = useState<string | null>(null);
-  const { projects } = useProjects();
-  const { tasks } = useTasks();
-  const { isAuthenticated } = useAuth();
-
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  
+  const { projects, isLoading: projectsLoading } = useProjects();
+  const { tasks, isLoading: tasksLoading } = useTasks();
+  
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      // Reset form when opening
       setTitle("");
       setDescription("");
-      setWeight(3);
       setDueDate(undefined);
+      setWeight(3);
       setProject("General");
-      setParentId(null);
     }
   }, [isOpen]);
-
-  const handleSubmit = () => {
-    if (!title) {
-      toast({
-        title: "Error",
-        description: "Title is required",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const task = {
-      title,
-      description,
-      weight,
+  
+  const handleSave = () => {
+    if (!title.trim()) return;
+    
+    onSave({
+      title: title.trim(),
+      description: description.trim(),
       dueDate: dueDate ? dueDate.toISOString() : null,
-      project,
-      parentId,
-    };
-
-    onSave(task);
+      weight, // Use weight instead of priority
+      project: project,
+      parentId: parentTaskId
+    });
+    
     onClose();
   };
-
+  
   return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Create New Task</AlertDialogTitle>
-          <AlertDialogDescription>
-            Enter the details for your new task.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Create New Task</DialogTitle>
+        </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="title" className="text-right">
@@ -106,68 +73,87 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onSa
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="col-span-3"
+              placeholder="Task title"
             />
           </div>
-
+          
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="description" className="text-right">
               Description
             </Label>
-            <Input
+            <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="col-span-3"
+              placeholder="Task description (optional)"
             />
           </div>
-
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="weight" className="text-right">
-              Priority
-            </Label>
-            <select
-              id="weight"
-              value={weight}
-              onChange={(e) => setWeight(Number(e.target.value))}
-              className="col-span-3 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {priorities.map((priority) => (
-                <option key={priority.value} value={priority.value}>
-                  {priority.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
+          
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="dueDate" className="text-right">
               Due Date
             </Label>
-            <Popover>
-              <PopoverTrigger asChild>
+            <div className="col-span-3">
+              <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dueDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dueDate}
+                    onSelect={(date) => {
+                      setDueDate(date);
+                      setIsDatePickerOpen(false);
+                    }}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="weight" className="text-right">
+              Weight
+            </Label>
+            <div className="col-span-3 flex items-center space-x-2">
+              {[1, 2, 3, 4, 5].map((value) => (
                 <Button
-                  variant={"outline"}
+                  key={value}
+                  type="button"
+                  variant={weight === value ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setWeight(value)}
                   className={cn(
-                    "col-span-3 pl-3 text-left font-normal",
-                    !dueDate && "text-muted-foreground"
+                    "flex-1",
+                    weight === value && "border-primary"
                   )}
                 >
-                  {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                  {value}
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dueDate}
-                  onSelect={setDueDate}
-                  disabled={(date) => date < new Date()}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+              ))}
+            </div>
+            <div className="col-span-4 text-center text-sm text-muted-foreground mt-1">
+              {weight === 1 && "Very Low"}
+              {weight === 2 && "Low"}
+              {weight === 3 && "Medium"}
+              {weight === 4 && "High"}
+              {weight === 5 && "Very High"}
+            </div>
           </div>
-
+          
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="project" className="text-right">
               Project
@@ -176,46 +162,36 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onSa
               id="project"
               value={project}
               onChange={(e) => setProject(e.target.value)}
-              className="col-span-3 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="col-span-3 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="General">General</option>
-              {isAuthenticated && projects &&
-                projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
+              {!projectsLoading && projects?.map((proj) => (
+                <option key={proj.id} value={proj.id}>
+                  {proj.name}
+                </option>
+              ))}
             </select>
           </div>
-
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="parentId" className="text-right">
-              Parent Task
-            </Label>
-            <select
-              id="parentId"
-              value={parentId || ""}
-              onChange={(e) =>
-                setParentId(e.target.value === "" ? null : e.target.value)
-              }
-              className="col-span-3 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">None</option>
-              {isAuthenticated && tasks &&
-                tasks.map((task) => (
-                  <option key={task.id} value={task.id}>
-                    {task.title}
-                  </option>
-                ))}
-            </select>
-          </div>
+          
+          {parentTaskId && !tasksLoading && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Parent Task</Label>
+              <div className="col-span-3 text-sm">
+                {tasks?.find(task => task.id === parentTaskId)?.title || "Unknown Task"}
+              </div>
+            </div>
+          )}
         </div>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleSubmit}>Create</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={!title.trim()}>
+            Create Task
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

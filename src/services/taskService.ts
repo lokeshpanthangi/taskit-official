@@ -76,6 +76,27 @@ export const fetchTasks = async () => {
   return tasksWithScores as Task[];
 };
 
+export const fetchTask = async (taskId: string) => {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select(`
+      *,
+      projects(name)
+    `)
+    .eq("id", taskId)
+    .single();
+    
+  if (error) {
+    console.error("Error fetching task:", error);
+    throw error;
+  }
+  
+  return {
+    ...data,
+    project: data.projects?.name
+  } as Task;
+};
+
 export const createTask = async (task: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => {
   const { data: { user } } = await supabase.auth.getUser();
   
@@ -118,6 +139,44 @@ export const updateTask = async (taskId: string, updates: Partial<Task>) => {
 };
 
 export const deleteTask = async (taskId: string) => {
+  // First, find any child tasks and update them to remove the parent_id
+  const { data: childTasks, error: childrenError } = await supabase
+    .from("tasks")
+    .select("id")
+    .eq("parent_id", taskId);
+    
+  if (childrenError) {
+    console.error("Error finding child tasks:", childrenError);
+    throw childrenError;
+  }
+  
+  // Update all child tasks to remove parent_id reference
+  if (childTasks && childTasks.length > 0) {
+    const childIds = childTasks.map(task => task.id);
+    
+    const { error: updateError } = await supabase
+      .from("tasks")
+      .update({ parent_id: null })
+      .in("id", childIds);
+      
+    if (updateError) {
+      console.error("Error updating child tasks:", updateError);
+      throw updateError;
+    }
+  }
+  
+  // Delete all subtasks
+  const { error: subtasksError } = await supabase
+    .from("subtasks")
+    .delete()
+    .eq("task_id", taskId);
+    
+  if (subtasksError) {
+    console.error("Error deleting subtasks:", subtasksError);
+    throw subtasksError;
+  }
+  
+  // Finally delete the task
   const { error } = await supabase
     .from("tasks")
     .delete()
@@ -129,6 +188,26 @@ export const deleteTask = async (taskId: string) => {
   }
   
   return true;
+};
+
+// Handle removing a task from being a subtask (but not deleting it)
+export const removeTaskFromParent = async (taskId: string) => {
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({
+      parent_id: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", taskId)
+    .select()
+    .single();
+    
+  if (error) {
+    console.error("Error removing task from parent:", error);
+    throw error;
+  }
+  
+  return data as Task;
 };
 
 // Subtasks management

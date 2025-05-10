@@ -5,7 +5,10 @@ import { Star, ChevronRight, ChevronDown, Check, GripVertical } from "lucide-rea
 import { format, isAfter, isBefore, isToday } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Task, TaskStatus } from "@/services/taskService";
+import { Task, TaskStatus, removeTaskFromParent } from "@/services/taskService";
+import { Button } from "@/components/ui/button";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/components/ui/sonner";
 
 interface TaskItemProps {
   task: Task;
@@ -35,7 +38,19 @@ const TaskItem = ({
   selected = false
 }: TaskItemProps) => {
   const [expanded, setExpanded] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const hasChildren = Array.isArray(children) && children.length > 0;
+  const queryClient = useQueryClient();
+  
+  // Remove from parent mutation
+  const removeParentMutation = useMutation({
+    mutationFn: removeTaskFromParent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success("Removed from parent task");
+    }
+  });
   
   // Calculate due date status
   const getDueDateStatus = () => {
@@ -63,6 +78,42 @@ const TaskItem = ({
     onStatusChange(task.id, checked ? "Completed" : "Not Started");
   };
   
+  // Handle drag functions with visual feedback
+  const handleDragStart = (e: React.DragEvent) => {
+    setIsDragging(true);
+    if (onDragStart) {
+      onDragStart(e, task.id);
+    }
+  };
+  
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+  
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+    if (onDragOver) {
+      onDragOver(e);
+    }
+  };
+  
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+  
+  const handleDrop = (e: React.DragEvent) => {
+    setIsDragOver(false);
+    if (onDrop) {
+      onDrop(e, task.id);
+    }
+  };
+  
+  const handleRemoveFromParent = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    removeParentMutation.mutate(task.id);
+  };
+  
   // Map priority number to label
   const getPriorityLabel = (priority: number): string => {
     switch(priority) {
@@ -79,16 +130,20 @@ const TaskItem = ({
     <div 
       className="task-item-container"
       draggable={true}
-      onDragStart={(e) => onDragStart && onDragStart(e, task.id)}
-      onDragOver={(e) => onDragOver && onDragOver(e)}
-      onDrop={(e) => onDrop && onDrop(e, task.id)}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
       <div 
         className={cn(
           "task-container flex items-start gap-3 hover:bg-accent/5 transition-all duration-200",
           isCompleted && "opacity-60",
           isHighPriority && "border-l-4 border-l-priority-high",
-          selected && "bg-accent/20 ring-1 ring-accent"
+          selected && "bg-accent/20 ring-1 ring-accent",
+          isDragging && "opacity-50",
+          isDragOver && "bg-accent/10 border-dashed"
         )}
         style={{ marginLeft: `${level * 1.5}rem` }}
         onClick={() => onSelect(task.id)}
@@ -118,11 +173,26 @@ const TaskItem = ({
               {task.description && (
                 <p className="text-sm text-muted-foreground line-clamp-1 pr-4">{task.description}</p>
               )}
+              {task.parent_id && (
+                <div className="flex items-center text-xs text-muted-foreground">
+                  <span>Has parent</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 p-0 px-1 hover:bg-transparent hover:text-destructive" 
+                    onClick={handleRemoveFromParent}
+                  >
+                    (remove)
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-sm text-muted-foreground whitespace-nowrap">
-                {task.project}
-              </span>
+              {task.project && (
+                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                  {task.project}
+                </span>
+              )}
               
               <div className="flex items-center">
                 <div className="mr-2 cursor-move">

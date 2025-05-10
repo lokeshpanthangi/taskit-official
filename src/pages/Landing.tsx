@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Check, Star, Calendar, List, Bell } from "lucide-react";
@@ -11,7 +11,7 @@ const Landing = () => {
   const [hasScrolled, setHasScrolled] = useState(false);
 
   // Handle scroll events
-  useState(() => {
+  useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       setHasScrolled(scrollTop > 50);
@@ -19,7 +19,7 @@ const Landing = () => {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  });
+  }, []);
 
   const features = [
     {
@@ -107,13 +107,30 @@ const Landing = () => {
             <div className="flex items-center justify-center">
               <div className="relative w-full h-full max-w-sm lg:max-w-none">
                 <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary to-primary-foreground opacity-20 blur-3xl" />
-                <img
-                  src="/placeholder.svg"
-                  alt="TaskPal Dashboard"
-                  className="relative z-10 mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full lg:order-last"
-                  width="550"
-                  height="310"
-                />
+                <div className="relative z-10 mx-auto aspect-video overflow-hidden rounded-xl shadow-2xl hover:shadow-primary/20 transition-all duration-300 hover:-translate-y-2">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-background/80 to-background/20 backdrop-blur-sm"></div>
+                  <div className="flex items-center justify-center h-full p-6">
+                    <div className="bg-card p-4 rounded-lg shadow-lg w-full">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="h-3 w-3 rounded-full bg-red-500"></div>
+                        <div className="h-3 w-3 rounded-full bg-yellow-500"></div>
+                        <div className="h-3 w-3 rounded-full bg-green-500"></div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <div className="h-4 bg-primary/20 w-32 rounded"></div>
+                          <div className="h-4 bg-primary/10 w-16 rounded"></div>
+                        </div>
+                        <div className="h-3 bg-primary/10 w-full rounded"></div>
+                        <div className="h-3 bg-primary/10 w-[80%] rounded"></div>
+                        <div className="h-3 bg-primary/10 w-[90%] rounded"></div>
+                        <div className="pt-2 flex justify-end">
+                          <div className="h-6 bg-primary w-16 rounded"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -134,7 +151,7 @@ const Landing = () => {
           </div>
           <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 md:grid-cols-2 lg:gap-12">
             {features.map((feature, i) => (
-              <Card key={i} className="relative overflow-hidden">
+              <Card key={i} className="relative overflow-hidden hover:shadow-lg hover:shadow-primary/10 transition-all duration-300">
                 <CardContent className="p-6">
                   <div className="flex flex-col items-center space-y-4 text-center">
                     <div className="p-2">

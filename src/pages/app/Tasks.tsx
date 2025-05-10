@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,6 @@ import TaskItem from "@/components/tasks/TaskItem";
 import { useTheme } from "next-themes";
 import { toast } from "@/components/ui/sonner";
 import CalendarView, { CalendarEvent } from "@/components/calendar/CalendarView";
-import { differenceInDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { 
@@ -77,7 +76,7 @@ const Tasks = () => {
   });
   
   // Calculate priority scores for all tasks and set top urgent tasks
-  useEffect(() => {
+  useState(() => {
     if (tasks) {
       // Sort by priority score and get top 5
       const sortedByPriority = [...tasks].sort((a, b) => 
@@ -85,7 +84,7 @@ const Tasks = () => {
       );
       setTopUrgentTasks(sortedByPriority.slice(0, 5));
     }
-  }, [tasks]);
+  });
   
   // Apply search filter and status filter
   const filterTasks = (allTasks: Task[]) => {
@@ -172,6 +171,14 @@ const Tasks = () => {
     
     // Find the dragged task
     const draggedTask = tasks?.find(t => t.id === draggedTaskId);
+    const targetTask = tasks?.find(t => t.id === targetTaskId);
+    
+    // Prevent circular references
+    if (targetTask?.parent_id === draggedTaskId) {
+      toast.error("Cannot create circular reference");
+      setDraggedTaskId(null);
+      return;
+    }
     
     if (draggedTask) {
       // Update the parent ID of the dragged task to be the target task's ID
@@ -235,7 +242,7 @@ const Tasks = () => {
   }
   
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in w-full">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="font-semibold tracking-tight">Tasks</h1>

@@ -11,36 +11,56 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { CalendarIcon, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Project, updateProject } from "@/services/projectService";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/components/ui/sonner";
 
-interface CreateProjectModalProps {
+interface EditProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (project: any) => void;
+  project: Project;
 }
 
-const CreateProjectModal = ({ isOpen, onClose, onSave }: CreateProjectModalProps) => {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState<Date>(new Date());
-  const [dueDate, setDueDate] = useState<Date>(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)); // Default to 1 week later
-  const [priority, setPriority] = useState<number>(3); // Default priority is 3 (medium)
-  const [tags, setTags] = useState<string[]>([]);
+const EditProjectModal = ({ isOpen, onClose, project }: EditProjectModalProps) => {
+  const [name, setName] = useState(project.name);
+  const [description, setDescription] = useState(project.description || "");
+  const [startDate, setStartDate] = useState<Date>(new Date(project.start_date));
+  const [dueDate, setDueDate] = useState<Date>(new Date(project.due_date));
+  const [priority, setPriority] = useState<number>(project.priority || 3);
+  const [tags, setTags] = useState<string[]>(project.tags || []);
   const [currentTag, setCurrentTag] = useState("");
   const [isStartDatePickerOpen, setIsStartDatePickerOpen] = useState(false);
   const [isDueDatePickerOpen, setIsDueDatePickerOpen] = useState(false);
   
+  const queryClient = useQueryClient();
+  
+  // Update project mutation
+  const updateProjectMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string, updates: Partial<Project> }) => 
+      updateProject(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast.success("Project updated successfully");
+      onClose();
+    },
+    onError: (error) => {
+      console.error("Error updating project:", error);
+      toast.error("Failed to update project");
+    }
+  });
+  
   useEffect(() => {
     if (isOpen) {
-      // Reset form when opening
-      setName("");
-      setDescription("");
-      setStartDate(new Date());
-      setDueDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
-      setPriority(3);
-      setTags([]);
+      // Reset form with project data
+      setName(project.name);
+      setDescription(project.description || "");
+      setStartDate(new Date(project.start_date));
+      setDueDate(new Date(project.due_date));
+      setPriority(project.priority || 3);
+      setTags(project.tags || []);
       setCurrentTag("");
     }
-  }, [isOpen]);
+  }, [isOpen, project]);
   
   const handleAddTag = () => {
     if (currentTag.trim() && !tags.includes(currentTag.trim())) {
@@ -53,26 +73,27 @@ const CreateProjectModal = ({ isOpen, onClose, onSave }: CreateProjectModalProps
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
   
-  const handleSave = () => {
+  const handleUpdate = () => {
     if (!name.trim()) return;
     
-    onSave({
-      name: name.trim(),
-      description: description.trim(),
-      startDate: startDate.toISOString(),
-      dueDate: dueDate.toISOString(),
-      priority,
-      tags
+    updateProjectMutation.mutate({
+      id: project.id,
+      updates: {
+        name: name.trim(),
+        description: description.trim(),
+        start_date: startDate.toISOString(),
+        due_date: dueDate.toISOString(),
+        priority,
+        tags
+      }
     });
-    
-    onClose();
   };
   
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Create New Project</DialogTitle>
+          <DialogTitle>Edit Project</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
@@ -249,8 +270,8 @@ const CreateProjectModal = ({ isOpen, onClose, onSave }: CreateProjectModalProps
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={!name.trim()}>
-            Create Project
+          <Button onClick={handleUpdate} disabled={!name.trim()}>
+            Update Project
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -258,4 +279,4 @@ const CreateProjectModal = ({ isOpen, onClose, onSave }: CreateProjectModalProps
   );
 };
 
-export default CreateProjectModal;
+export default EditProjectModal;

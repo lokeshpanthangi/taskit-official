@@ -9,7 +9,7 @@ const AuthLayout = () => {
   // Show loading indicator while checking authentication
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse flex flex-col items-center gap-4">
           <div className="h-12 w-12 rounded-full bg-primary/20"></div>
           <div className="h-4 w-32 rounded bg-primary/20"></div>
@@ -51,7 +51,7 @@ const AuthLayout = () => {
         </div>
         
         {/* Right side with auth form */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-card">
           <div className="w-full max-w-md space-y-8">
             <Outlet />
           </div>
