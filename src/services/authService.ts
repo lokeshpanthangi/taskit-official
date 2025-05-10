@@ -7,6 +7,7 @@ export interface UserProfile {
   last_name?: string;
   avatar_url?: string;
   created_at?: string;
+  email?: string; 
 }
 
 export const getCurrentUser = async () => {

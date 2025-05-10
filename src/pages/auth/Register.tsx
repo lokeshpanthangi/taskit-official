@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
-import { signUp } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Register = () => {
   const [email, setEmail] = useState("");
@@ -13,15 +13,18 @@ const Register = () => {
   const [lastName, setLastName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await signUp(email, password, firstName, lastName);
-      toast.success("Registration successful! Please check your email to confirm your account.");
-      navigate("/login");
+      const success = await register(email, password, firstName, lastName);
+      if (success) {
+        toast.success("Registration successful! Please check your email to confirm your account.");
+        navigate("/login");
+      }
     } catch (error: any) {
       console.error("Error signing up:", error);
       toast.error(error.message || "Failed to register");
@@ -93,7 +96,7 @@ const Register = () => {
             autoComplete="new-password"
           />
           <p className="text-xs text-muted-foreground">
-            Password must be at least 8 characters long
+            Password must be at least 6 characters long
           </p>
         </div>
         

@@ -4,7 +4,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 
 const AuthLayout = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Show loading indicator while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="h-12 w-12 rounded-full bg-primary/20"></div>
+          <div className="h-4 w-32 rounded bg-primary/20"></div>
+        </div>
+      </div>
+    );
+  }
 
   // Redirect to dashboard if already authenticated
   if (isAuthenticated) {

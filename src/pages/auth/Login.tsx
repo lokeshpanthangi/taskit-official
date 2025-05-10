@@ -4,22 +4,25 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
-import { signIn } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await signIn(email, password);
-      toast.success("Logged in successfully!");
-      navigate("/dashboard");
+      const success = await login(email, password);
+      if (success) {
+        toast.success("Logged in successfully!");
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       console.error("Error signing in:", error);
       toast.error(error.message || "Failed to log in");
