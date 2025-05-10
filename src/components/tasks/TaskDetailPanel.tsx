@@ -25,7 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { supabase } from "@/integrations/supabase/client"; // Add missing import
+import { supabase } from "@/integrations/supabase/client";
 
 interface TaskDetailPanelProps {
   taskId: string | null;
@@ -158,7 +158,14 @@ const TaskDetailPanel = ({ taskId, onClose }: TaskDetailPanelProps) => {
             .eq("parent_id", taskId);
             
           if (error) throw error;
-          setChildTasks(childTasksData || []);
+          
+          // Map the Supabase response to ensure TaskStatus compatibility
+          const formattedChildTasks: TaskData[] = (childTasksData || []).map(childTask => ({
+            ...childTask,
+            status: childTask.status as TaskStatus
+          }));
+          
+          setChildTasks(formattedChildTasks);
         } catch (error) {
           console.error("Error fetching child tasks:", error);
           toast.error("Error loading child tasks");
