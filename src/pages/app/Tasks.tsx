@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import TaskItem from "@/components/tasks/TaskItem";
 import { useTheme } from "next-themes";
 import { toast } from "@/components/ui/sonner";
 import CalendarView, { CalendarEvent } from "@/components/calendar/CalendarView";
+import { differenceInDays } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 // Mock data for tasks with hierarchical structure
 const initialTasks = [
@@ -117,6 +119,36 @@ const Tasks = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [topUrgentTasks, setTopUrgentTasks] = useState<any[]>([]);
+  
+  // Calculate priority scores for all tasks and set top urgent tasks
+  useEffect(() => {
+    const tasksWithScores = tasks.map(task => {
+      // Calculate priority score
+      const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+      let priorityScore = task.priority || 3; // Default priority weight
+      
+      if (dueDate) {
+        const daysUntilDue = differenceInDays(dueDate, new Date());
+        if (daysUntilDue < 0) {
+          // Overdue tasks get highest priority
+          priorityScore = priorityScore * 10;
+        } else {
+          // Formula: weight * (10 / (daysUntilDue + 1)) - higher weight and fewer days = higher score
+          priorityScore = priorityScore * (10 / (daysUntilDue + 1));
+        }
+      }
+      
+      return {
+        ...task,
+        priorityScore: Math.round(priorityScore * 10) / 10
+      };
+    });
+    
+    // Sort by priority score and get top 5
+    const sortedByPriority = [...tasksWithScores].sort((a, b) => b.priorityScore - a.priorityScore);
+    setTopUrgentTasks(sortedByPriority.slice(0, 5));
+  }, [tasks]);
   
   // Organize tasks into hierarchy
   const buildTaskHierarchy = (allTasks: any[]) => {
@@ -202,6 +234,7 @@ const Tasks = () => {
         level={level}
         onSelect={(taskId) => toggleDetailPanel(taskId)}
         onStatusChange={handleStatusChange}
+        isHighPriority={topUrgentTasks.some(urgent => urgent.id === task.id)}
       >
         {task.children && task.children.length > 0 && renderTaskHierarchy(task.children, level + 1)}
       </TaskItem>
@@ -238,6 +271,33 @@ const Tasks = () => {
         </div>
       </div>
       
+      {topUrgentTasks.length > 0 && (
+        <Card className="gradient-border bg-card">
+          <CardHeader>
+            <CardTitle className="text-lg">Top Priority Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {topUrgentTasks.map(task => (
+                <div 
+                  key={task.id}
+                  className="flex items-center justify-between p-3 rounded-md border bg-secondary/30 cursor-pointer hover:bg-secondary/50"
+                  onClick={() => toggleDetailPanel(task.id)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Badge variant="destructive" className="rounded-full">{task.priorityScore.toFixed(1)}</Badge>
+                    <span>{task.title}</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "No due date"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       <div className="flex flex-col gap-4 md:flex-row">
         <div className="relative flex-1">
           <Input 
@@ -268,7 +328,7 @@ const Tasks = () => {
       
       <div className="grid gap-6">
         {viewMode === "list" ? (
-          <Card>
+          <Card className="gradient-border bg-card">
             <CardHeader className="py-3">
               <CardTitle>Task Hierarchy</CardTitle>
             </CardHeader>

@@ -1,12 +1,15 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { toast } from "@/components/ui/sonner";
+import CreateProjectModal from "@/components/projects/CreateProjectModal";
 
 // Mock projects data
-const projects = [
+const initialProjects = [
   {
     id: "project-1",
     name: "Website Redesign",
@@ -52,6 +55,14 @@ const projects = [
 ];
 
 const Projects = () => {
+  const [projects, setProjects] = useState(initialProjects);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  
+  const handleCreateProject = (newProject) => {
+    setProjects([...projects, newProject]);
+    toast.success("Project created successfully!");
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -60,7 +71,7 @@ const Projects = () => {
           <p className="text-muted-foreground">Manage and track your project portfolio</p>
         </div>
         
-        <Button>
+        <Button onClick={() => setIsCreateModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           New Project
         </Button>
@@ -68,7 +79,7 @@ const Projects = () => {
       
       <div className="grid gap-6">
         {projects.map((project) => (
-          <Card key={project.id} className="overflow-hidden">
+          <Card key={project.id} className="overflow-hidden gradient-border bg-card">
             <CardHeader className="bg-muted/30">
               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                 <div>
@@ -132,6 +143,12 @@ const Projects = () => {
           </Card>
         ))}
       </div>
+      
+      <CreateProjectModal 
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSave={handleCreateProject}
+      />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Star } from "lucide-react";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -20,8 +22,28 @@ const CreateTaskModal = ({ isOpen, onClose, onSave }: CreateTaskModalProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
-  const [priority, setPriority] = useState(3);
+  const [weight, setWeight] = useState(3);
   const [project, setProject] = useState("General");
+  const [priorityScore, setPriorityScore] = useState<number | null>(null);
+  
+  // Calculate priority score based on weight and days until due
+  useEffect(() => {
+    if (dueDate && weight) {
+      const daysUntilDue = differenceInDays(dueDate, new Date());
+      // Formula: weight * (10 / (daysUntilDue + 1)) - higher weight and fewer days = higher score
+      let score: number;
+      if (daysUntilDue < 0) {
+        // Overdue tasks get highest priority
+        score = weight * 10;
+      } else {
+        score = weight * (10 / (daysUntilDue + 1));
+      }
+      // Round to 1 decimal place
+      setPriorityScore(Math.round(score * 10) / 10);
+    } else {
+      setPriorityScore(null);
+    }
+  }, [dueDate, weight]);
   
   const handleSave = () => {
     if (!title.trim()) return;
@@ -31,7 +53,8 @@ const CreateTaskModal = ({ isOpen, onClose, onSave }: CreateTaskModalProps) => {
       title,
       description,
       dueDate: dueDate ? dueDate.toISOString().split('T')[0] : undefined,
-      priority,
+      weight,
+      priorityScore: priorityScore || weight, // Default to weight if no due date
       project,
       status: "Not Started",
       parentId: null,
@@ -46,8 +69,18 @@ const CreateTaskModal = ({ isOpen, onClose, onSave }: CreateTaskModalProps) => {
     setTitle("");
     setDescription("");
     setDueDate(undefined);
-    setPriority(3);
+    setWeight(3);
     setProject("General");
+    setPriorityScore(null);
+  };
+
+  // Helper function to get priority class based on score
+  const getPriorityClass = (score: number | null) => {
+    if (score === null) return "bg-gray-200";
+    if (score >= 8) return "bg-priority-urgent text-white";
+    if (score >= 5) return "bg-priority-high text-white";
+    if (score >= 3) return "bg-priority-medium";
+    return "bg-priority-low";
   };
   
   return (
@@ -115,32 +148,53 @@ const CreateTaskModal = ({ isOpen, onClose, onSave }: CreateTaskModalProps) => {
                   selected={dueDate}
                   onSelect={setDueDate}
                   initialFocus
+                  className={cn("p-3 pointer-events-auto")}
                 />
               </PopoverContent>
             </Popover>
           </div>
           
-          {/* Priority selector */}
+          {/* Weight selector with slider */}
           <div className="space-y-2">
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Priority (1-5)
-            </label>
-            <div className="flex space-x-1">
-              {[1, 2, 3, 4, 5].map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setPriority(value)}
-                  className={cn(
-                    "p-2 rounded-md transition-colors",
-                    priority >= value ? "text-priority-high" : "text-muted-foreground"
-                  )}
-                >
-                  <Star className="h-5 w-5" fill={priority >= value ? "currentColor" : "none"} />
-                </button>
-              ))}
+            <div className="flex justify-between">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Weight (1-5)
+              </label>
+              <span className="text-sm font-medium">{weight}</span>
+            </div>
+            <Slider
+              value={[weight]}
+              min={1}
+              max={5}
+              step={1}
+              onValueChange={(value) => setWeight(value[0])}
+              className="py-4"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Lowest</span>
+              <span>Highest</span>
             </div>
           </div>
+          
+          {/* Priority Score display */}
+          {priorityScore !== null && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Priority Score (Calculated)
+              </label>
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "px-3 py-1 rounded-full text-sm font-medium",
+                  getPriorityClass(priorityScore)
+                )}>
+                  {priorityScore.toFixed(1)}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Based on weight and due date
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Project selection */}
           <div className="space-y-2">

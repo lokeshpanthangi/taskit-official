@@ -6,6 +6,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import TaskDetailPanel from "@/components/tasks/TaskDetailPanel";
 import NotificationHeader from "@/components/layout/NotificationHeader";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 
 const AppLayout = () => {
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
@@ -36,7 +37,7 @@ const AppLayout = () => {
         {/* Main content area */}
         <div className="flex flex-col flex-1 overflow-hidden">
           {/* Top header */}
-          <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center justify-between p-4 border-b border-border/40">
             <Header />
             <div className="flex items-center gap-2">
               <NotificationHeader toggleDetailPanel={toggleDetailPanel} />
@@ -52,12 +53,14 @@ const AppLayout = () => {
             
             {/* Right panel for task details (conditionally rendered) */}
             {isDetailPanelOpen && (
-              <div className="w-96 border-l bg-background overflow-y-auto">
-                <TaskDetailPanel 
-                  taskId={selectedTaskId} 
-                  onClose={closeDetailPanel}
-                />
-              </div>
+              <Tabs defaultValue="details" className="w-96 border-l border-border/40 bg-card overflow-y-auto">
+                <div>
+                  <TaskDetailPanel 
+                    taskId={selectedTaskId} 
+                    onClose={closeDetailPanel}
+                  />
+                </div>
+              </Tabs>
             )}
           </div>
         </div>
