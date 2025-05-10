@@ -1,8 +1,8 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import CalendarView, { CalendarEvent } from "@/components/calendar/CalendarView";
 import { fetchTasks, Task } from "@/services/taskService";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
