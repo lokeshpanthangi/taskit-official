@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,15 +76,15 @@ const Tasks = () => {
   });
   
   // Calculate priority scores for all tasks and set top urgent tasks
-  useState(() => {
-    if (tasks) {
+  useEffect(() => {
+    if (tasks && tasks.length > 0) {
       // Sort by priority score and get top 5
       const sortedByPriority = [...tasks].sort((a, b) => 
         (b.priorityScore || 0) - (a.priorityScore || 0)
       );
       setTopUrgentTasks(sortedByPriority.slice(0, 5));
     }
-  });
+  }, [tasks]);
   
   // Apply search filter and status filter
   const filterTasks = (allTasks: Task[]) => {
@@ -106,15 +106,7 @@ const Tasks = () => {
   };
   
   const handleAddTask = (newTask: any) => {
-    createTaskMutation.mutate({
-      title: newTask.title,
-      description: newTask.description,
-      priority: newTask.weight || 3,
-      due_date: newTask.dueDate,
-      project_id: newTask.project !== "General" ? newTask.project : undefined,
-      parent_id: newTask.parentId || null,
-      status: "Not Started" as TaskStatus
-    });
+    createTaskMutation.mutate(newTask);
   };
   
   const handleStatusChange = (taskId: string, status: TaskStatus) => {
@@ -289,33 +281,39 @@ const Tasks = () => {
         </Button>
       </div>
       
-      {activeTab === "priority" && topUrgentTasks.length > 0 && (
-        <Card className="bg-card border-0 shadow-md">
+      {activeTab === "priority" && (
+        <Card className="bg-card border shadow-md">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl">Top Priority Tasks</CardTitle>
+            <CardTitle className="text-xl">Top 5 Priority Tasks</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {topUrgentTasks.map(task => (
-                <div 
-                  key={task.id}
-                  className="flex items-center justify-between p-3 rounded-md bg-secondary/20 cursor-pointer hover:bg-secondary/30"
-                  onClick={() => handleTaskSelect(task.id)}
-                >
-                  <div className="flex items-center space-x-3">
-                    <Badge 
-                      variant="destructive" 
-                      className="rounded-full px-2.5 py-0.5"
-                    >
-                      {task.priorityScore?.toFixed(1) || task.priority}
-                    </Badge>
-                    <span className="font-medium">{task.title}</span>
+              {topUrgentTasks.length > 0 ? (
+                topUrgentTasks.map(task => (
+                  <div 
+                    key={task.id}
+                    className="flex items-center justify-between p-3 rounded-md bg-secondary/20 cursor-pointer hover:bg-secondary/30"
+                    onClick={() => handleTaskSelect(task.id)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Badge 
+                        variant="destructive" 
+                        className="rounded-full px-2.5 py-0.5"
+                      >
+                        {task.priorityScore?.toFixed(1) || task.priority}
+                      </Badge>
+                      <span className="font-medium">{task.title}</span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {task.due_date ? new Date(task.due_date).toLocaleDateString() : "No due date"}
+                    </div>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    {task.due_date ? new Date(task.due_date).toLocaleDateString() : "No due date"}
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground">No tasks found. Create your first task to see it here.</p>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>

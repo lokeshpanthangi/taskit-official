@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -9,18 +10,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
-import { useProjects } from "@/hooks/useProjects";
-import { useTasks } from "@/hooks/useTasks";
-import { createTask, TaskStatus } from "@/services/taskService";
+import { TaskStatus } from "@/services/taskService";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { toast } from "@/components/ui/sonner";
 
-// Update the interface to include onSuccess and defaultDate properties
 interface CreateTaskModalProps {
   isOpen?: boolean;
   onClose?: () => void;
   onSave?: (task: any) => void;
-  parentTaskId?: string;
   onSuccess?: () => void;
   defaultDate?: Date | null;
 }
@@ -29,7 +26,6 @@ const CreateTaskModal = ({
   isOpen, 
   onClose, 
   onSave, 
-  parentTaskId,
   onSuccess,
   defaultDate
 }: CreateTaskModalProps) => {
@@ -38,12 +34,8 @@ const CreateTaskModal = ({
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState<Date | undefined>(defaultDate || undefined);
   const [weight, setWeight] = useState<number>(3); // Default weight is 3 (medium)
-  const [project, setProject] = useState("General");
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
-  const { projects, isLoading: projectsLoading } = useProjects();
-  const { tasks, isLoading: tasksLoading } = useTasks();
   
   useEffect(() => {
     if (isOpen) {
@@ -52,7 +44,6 @@ const CreateTaskModal = ({
       setDescription("");
       setDueDate(defaultDate || undefined);
       setWeight(3);
-      setProject("General");
     }
   }, [isOpen, defaultDate]);
   
@@ -67,13 +58,13 @@ const CreateTaskModal = ({
         description: description.trim(),
         due_date: dueDate ? dueDate.toISOString() : null,
         priority: weight, // Changed from weight to priority to match the Task type
-        project_id: project !== "General" ? project : null,
-        parent_id: parentTaskId || null,
         user_id: user?.id,
         status: "Not Started" as TaskStatus // Using proper TaskStatus type
       };
       
-      await createTask(taskData);
+      if (onSave) {
+        onSave(taskData);
+      }
       
       toast.success("Task created successfully");
       
@@ -160,7 +151,7 @@ const CreateTaskModal = ({
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="weight" className="text-right">
-              Weight
+              Priority
             </Label>
             <div className="col-span-3 flex items-center space-x-2">
               {[1, 2, 3, 4, 5].map((value) => (
@@ -187,34 +178,6 @@ const CreateTaskModal = ({
               {weight === 5 && "Very High"}
             </div>
           </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="project" className="text-right">
-              Project
-            </Label>
-            <select
-              id="project"
-              value={project}
-              onChange={(e) => setProject(e.target.value)}
-              className="col-span-3 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="General">General</option>
-              {!projectsLoading && projects?.map((proj) => (
-                <option key={proj.id} value={proj.id}>
-                  {proj.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {parentTaskId && !tasksLoading && (
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Parent Task</Label>
-              <div className="col-span-3 text-sm">
-                {tasks?.find(task => task.id === parentTaskId)?.title || "Unknown Task"}
-              </div>
-            </div>
-          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isLoading}>

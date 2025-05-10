@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Notification } from "@/services/notificationService";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface NotificationCenterProps {
   notifications: Notification[];
@@ -30,6 +31,7 @@ const NotificationCenter = ({
   onNotificationClick,
 }: NotificationCenterProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const queryClient = useQueryClient();
   
   // Count unread notifications
   const unreadCount = notifications?.filter(n => !n.read).length || 0;
@@ -40,6 +42,8 @@ const NotificationCenter = ({
     
     if (!notification.read) {
       onNotificationRead(notification.id);
+      // Invalidate the notifications query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     }
     
     setIsOpen(false);
@@ -60,7 +64,7 @@ const NotificationCenter = ({
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80">
+      <DropdownMenuContent align="end" className="w-80 bg-background border shadow-md">
         <DropdownMenuLabel className="flex justify-between">
           <span>Notifications</span>
           {unreadCount > 0 && (
@@ -68,7 +72,10 @@ const NotificationCenter = ({
               variant="ghost"
               size="sm"
               className="text-xs h-7 px-2"
-              onClick={onAllRead}
+              onClick={() => {
+                onAllRead();
+                queryClient.invalidateQueries({ queryKey: ['notifications'] });
+              }}
             >
               Mark all as read
             </Button>
