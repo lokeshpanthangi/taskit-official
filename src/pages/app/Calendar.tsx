@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Calendar as CalendarIcon } from "lucide-react";
 import CalendarView, { CalendarEvent } from "@/components/calendar/CalendarView";
 import { fetchTasks, Task } from "@/services/taskService";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
@@ -12,6 +12,7 @@ import CreateTaskModal from "@/components/tasks/CreateTaskModal";
 import { format } from "date-fns";
 import { useOutletContext } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
+import { useTasks } from "@/hooks/useTasks";
 
 type OutletContextType = {
   toggleDetailPanel: (taskId?: string) => void;
@@ -23,12 +24,8 @@ const Calendar = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
 
-  // Fetch tasks with React Query
-  const { data: tasks, isLoading } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: fetchTasks,
-    enabled: isAuthenticated,
-  });
+  // Use the useTasks hook instead of direct query
+  const { tasks, isLoading } = useTasks();
 
   // Convert tasks to calendar events format
   const mapTasksToEvents = (tasks: Task[] | undefined): CalendarEvent[] => {
@@ -69,43 +66,51 @@ const Calendar = () => {
   };
 
   return (
-    <div className="space-y-4 animate-fade-in h-full w-full max-w-[200%] mx-auto overflow-x-auto pb-4">
+    <div className="space-y-6 animate-fade-in h-full w-full max-w-full mx-auto overflow-x-auto pb-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Calendar</h1>
-          <p className="text-muted-foreground">View and manage your schedule</p>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="h-6 w-6 text-primary" />
+            <h1 className="text-3xl font-semibold tracking-tight">Calendar</h1>
+          </div>
+          <p className="text-muted-foreground">Schedule and manage your tasks visually</p>
         </div>
         
-        <div className="flex items-center space-x-2">
-          <Button onClick={() => setIsCreateTaskModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Task
-          </Button>
-        </div>
+        <Button onClick={() => setIsCreateTaskModalOpen(true)} className="shadow-sm hover:shadow-md transition-all">
+          <Plus className="h-4 w-4 mr-2" />
+          New Task
+        </Button>
       </div>
       
       {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-pulse flex flex-col items-center">
-            <div className="h-12 w-12 rounded-full bg-primary/20 mb-4"></div>
-            <div className="h-4 w-32 rounded bg-primary/20"></div>
-          </div>
-        </div>
+        <Card className="h-96 bg-card/60 backdrop-blur-sm border-primary/10">
+          <CardContent className="flex items-center justify-center h-full">
+            <div className="animate-pulse flex flex-col items-center">
+              <div className="h-12 w-12 rounded-full bg-primary/20 mb-4"></div>
+              <div className="h-4 w-32 rounded bg-primary/20"></div>
+            </div>
+          </CardContent>
+        </Card>
       ) : calendarEvents.length === 0 ? (
-        <Card className="h-96">
+        <Card className="h-96 bg-card/60 backdrop-blur-sm border-primary/10">
           <CardHeader>
-            <CardTitle>No scheduled tasks</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+              No scheduled tasks
+            </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center h-64">
-            <p className="text-muted-foreground mb-4">Create your first task to see it on the calendar</p>
-            <Button onClick={() => setIsCreateTaskModalOpen(true)}>
+          <CardContent className="flex flex-col items-center justify-center h-64 p-6">
+            <p className="text-muted-foreground mb-6 text-center">
+              Your calendar is empty. Create your first task to see it on the calendar.
+            </p>
+            <Button onClick={() => setIsCreateTaskModalOpen(true)} className="shadow-sm hover:shadow-md transition-all">
               <Plus className="h-4 w-4 mr-2" />
               Create Task
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="w-full h-[calc(100vh-20rem)] min-h-[650px] overflow-hidden">
+        <div className="w-full h-[calc(100vh-20rem)] min-h-[650px] overflow-hidden rounded-xl shadow-sm border border-border/50">
           <CalendarView 
             events={calendarEvents} 
             onEventClick={handleEventClick} 
