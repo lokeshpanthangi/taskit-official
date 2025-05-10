@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -135,12 +134,14 @@ const Dashboard = () => {
       if (action === "Add Task") {
         toggleDetailPanel();
         
-        // Create notification for demo
+        // Create notification for demo - fix the type issue
         await createNotification({
           title: "Quick task created",
           message: "You've created a task from the dashboard",
           type: "info",
-          read: false,
+          date: new Date().toISOString(),
+          task_id: null,
+          priority: 1
         });
       }
       toast.success(`Action triggered: ${action}`);

@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { X, Star, Calendar, CheckCircle, Edit, Trash, Save } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -26,6 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { supabase } from "@/integrations/supabase/client"; // Add missing import
 
 interface TaskDetailPanelProps {
   taskId: string | null;

@@ -47,7 +47,7 @@ const AppLayout = () => {
           {/* Content with optional right panel */}
           <div className="flex flex-1 overflow-hidden w-full">
             {/* Main scrollable content */}
-            <main className="flex-1 overflow-y-auto p-6 w-full">
+            <main className="flex-1 overflow-y-auto p-6 w-full h-full">
               <Outlet context={{ toggleDetailPanel }} />
             </main>
             
