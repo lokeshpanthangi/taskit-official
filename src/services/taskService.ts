@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays } from "date-fns";
 
@@ -34,6 +33,8 @@ export const fetchTasks = async () => {
   
   if (!user) throw new Error("User not authenticated");
   
+  console.log("Fetching tasks for user:", user.id); // Debug log
+  
   const { data, error } = await supabase
     .from("tasks")
     .select(`
@@ -47,6 +48,8 @@ export const fetchTasks = async () => {
     console.error("Error fetching tasks:", error);
     throw error;
   }
+  
+  console.log("Fetched tasks count:", data?.length); // Debug log
   
   // Calculate priority scores
   const tasksWithScores = data?.map(task => {

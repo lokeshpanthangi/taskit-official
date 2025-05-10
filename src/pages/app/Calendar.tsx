@@ -4,9 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Calendar as CalendarIcon } from "lucide-react";
 import CalendarView, { CalendarEvent } from "@/components/calendar/CalendarView";
-import { fetchTasks, Task } from "@/services/taskService";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
-import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import CreateTaskModal from "@/components/tasks/CreateTaskModal";
 import { format } from "date-fns";
@@ -19,13 +17,16 @@ type OutletContextType = {
 };
 
 const Calendar = () => {
-  const { isAuthenticated } = useSupabaseAuth();
+  const { isAuthenticated, user } = useSupabaseAuth();
   const { toggleDetailPanel } = useOutletContext<OutletContextType>();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
 
   // Use the useTasks hook instead of direct query
   const { tasks, isLoading } = useTasks();
+  
+  console.log("Calendar: Current user ID:", user?.id); // Debug log
+  console.log("Calendar: Tasks count:", tasks?.length); // Debug log
 
   // Convert tasks to calendar events format
   const mapTasksToEvents = (tasks: Task[] | undefined): CalendarEvent[] => {
@@ -64,6 +65,17 @@ const Calendar = () => {
     toast.success("Task created successfully");
     handleCloseCreateTaskModal();
   };
+  
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col gap-6 h-full items-center justify-center">
+        <h2 className="text-2xl font-semibold">Please log in to view your calendar</h2>
+        <Button asChild>
+          <a href="/login">Log In</a>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in h-full w-full max-w-full mx-auto overflow-x-auto pb-6">
