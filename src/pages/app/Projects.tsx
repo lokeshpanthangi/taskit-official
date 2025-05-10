@@ -6,21 +6,21 @@ import { toast } from "@/components/ui/sonner";
 import CreateProjectModal from "@/components/projects/CreateProjectModal";
 import ProjectCard from "@/components/projects/ProjectCard";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
-import { fetchProjects, createProject } from "@/services/projectService";
+import { createProject } from "@/services/projectService";
 import { fetchTasks } from "@/services/taskService";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useProjects } from "@/hooks/useProjects";
 
 const Projects = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const { isAuthenticated, isLoading: authLoading } = useSupabaseAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useSupabaseAuth();
   const queryClient = useQueryClient();
   
-  // Fetch projects
-  const { data: projects, isLoading: projectsLoading } = useQuery({
-    queryKey: ['projects'],
-    queryFn: fetchProjects,
-    enabled: isAuthenticated,
-  });
+  // Use the useProjects hook for data isolation
+  const { projects, isLoading: projectsLoading } = useProjects();
+  
+  console.log("Projects page - Current user ID:", user?.id); // Debug log
+  console.log("Projects page - Projects count:", projects?.length); // Debug log
 
   // Fetch tasks (for team member estimation)
   const { data: tasks } = useQuery({
