@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Star, ChevronRight, ChevronDown, Check } from "lucide-react";
+import { Star, ChevronRight, ChevronDown, Check, GripVertical } from "lucide-react";
 import { format, isAfter, isBefore, isToday } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -13,6 +13,11 @@ interface TaskItemProps {
   onSelect: (taskId: string) => void;
   onStatusChange: (taskId: string, status: string) => void;
   isHighPriority?: boolean;
+  onPriorityChange?: (taskId: string, priority: number) => void;
+  onDragStart?: (e: React.DragEvent, taskId: string) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent, taskId: string) => void;
+  selected?: boolean;
 }
 
 const TaskItem = ({ 
@@ -21,7 +26,12 @@ const TaskItem = ({
   level = 0, 
   onSelect, 
   onStatusChange,
-  isHighPriority = false
+  isHighPriority = false,
+  onPriorityChange,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  selected = false
 }: TaskItemProps) => {
   const [expanded, setExpanded] = useState(true);
   const hasChildren = Array.isArray(children) && children.length > 0;
@@ -52,13 +62,32 @@ const TaskItem = ({
     onStatusChange(task.id, checked ? "Completed" : "Not Started");
   };
   
+  // Map priority number to label
+  const getPriorityLabel = (priority: number): string => {
+    switch(priority) {
+      case 5: return "Urgent";
+      case 4: return "Very High";
+      case 3: return "High";
+      case 2: return "Medium";
+      case 1: return "Low";
+      default: return "Medium";
+    }
+  };
+
   return (
-    <div className="task-item-container">
+    <div 
+      className="task-item-container"
+      draggable={true}
+      onDragStart={(e) => onDragStart && onDragStart(e, task.id)}
+      onDragOver={(e) => onDragOver && onDragOver(e)}
+      onDrop={(e) => onDrop && onDrop(e, task.id)}
+    >
       <div 
         className={cn(
-          "task-container flex items-start gap-3 hover:bg-accent/5",
+          "task-container flex items-start gap-3 hover:bg-accent/5 transition-all duration-200",
           isCompleted && "opacity-60",
-          isHighPriority && "border-l-4 border-l-priority-high"
+          isHighPriority && "border-l-4 border-l-priority-high",
+          selected && "bg-accent/20 ring-1 ring-accent"
         )}
         style={{ marginLeft: `${level * 1.5}rem` }}
         onClick={() => onSelect(task.id)}
@@ -94,7 +123,10 @@ const TaskItem = ({
                 {task.project}
               </span>
               
-              <div className="flex">
+              <div className="flex items-center">
+                <div className="mr-2 cursor-move">
+                  <GripVertical size={14} className="opacity-50 hover:opacity-100" />
+                </div>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -104,12 +136,16 @@ const TaskItem = ({
                             key={value}
                             size={14}
                             className={value <= task.priority ? "text-priority-high fill-priority-high" : "text-muted"}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onPriorityChange && onPriorityChange(task.id, value);
+                            }}
                           />
                         ))}
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Priority: {task.priority}/5</p>
+                      <p>{getPriorityLabel(task.priority)} Priority ({task.priority}/5)</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -145,7 +181,7 @@ const TaskItem = ({
       </div>
       
       {hasChildren && expanded && (
-        <div className="children-container">
+        <div className="children-container animate-accordion-down">
           {children}
         </div>
       )}

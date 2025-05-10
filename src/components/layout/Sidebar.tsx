@@ -1,5 +1,5 @@
 
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar as SidebarContainer,
   SidebarContent,
@@ -16,9 +16,13 @@ import { Button } from "@/components/ui/button";
 import { LayoutDashboard, CheckSquare, Calendar, Settings, FolderKanban, Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
 
 const Sidebar = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const { theme } = useTheme();
   
   const mainNavItems = [
     { name: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, to: "/dashboard" },
@@ -37,7 +41,7 @@ const Sidebar = () => {
     <SidebarContainer>
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center text-primary-foreground font-bold">
+          <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center text-primary-foreground font-bold animate-pulse">
             TP
           </div>
           <h1 className="text-xl font-semibold">TaskPal</h1>
@@ -48,7 +52,7 @@ const Sidebar = () => {
         <SidebarGroup>
           <SidebarGroupContent>
             <div className="flex justify-center py-2">
-              <Button size="sm" className="w-full">
+              <Button size="sm" className="w-full animate-fade-in hover:scale-105 transition-transform">
                 <Plus className="h-4 w-4 mr-2" />
                 New Task
               </Button>
@@ -64,9 +68,15 @@ const Sidebar = () => {
                 <SidebarMenuItem key={item.name}>
                   <NavLink 
                     to={item.to}
-                    className={({ isActive }) => 
-                      isActive ? "sidebar-item active" : "sidebar-item"
-                    }
+                    className={({ isActive }) => {
+                      return cn(
+                        "sidebar-item transition-all duration-200",
+                        isActive && "sidebar-item active",
+                        isActive && "font-medium",
+                        isActive && theme === "light" ? "bg-accent/40 text-primary" : "",
+                        isActive && theme === "dark" ? "bg-accent/20 text-accent-foreground" : ""
+                      )
+                    }}
                   >
                     {item.icon} 
                     <span>{item.name}</span>
@@ -83,7 +93,7 @@ const Sidebar = () => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-5 w-5">
+                  <Button variant="ghost" size="icon" className="h-5 w-5 hover:scale-110 transition-transform">
                     <Plus className="h-3.5 w-3.5" />
                     <span className="sr-only">Add project</span>
                   </Button>
@@ -100,9 +110,15 @@ const Sidebar = () => {
                 <SidebarMenuItem key={project.name}>
                   <NavLink 
                     to={project.to}
-                    className={({ isActive }) => 
-                      isActive ? "sidebar-item active" : "sidebar-item"
-                    }
+                    className={({ isActive }) => {
+                      return cn(
+                        "sidebar-item transition-all duration-200",
+                        isActive && "sidebar-item active",
+                        isActive && "font-medium",
+                        isActive && theme === "light" ? "bg-accent/40 text-primary" : "",
+                        isActive && theme === "dark" ? "bg-accent/20 text-accent-foreground" : ""
+                      )
+                    }}
                   >
                     <div className="h-2 w-2 rounded-full bg-primary"></div>
                     <span>{project.name}</span>
@@ -117,11 +133,14 @@ const Sidebar = () => {
       <SidebarFooter className="p-4 border-t">
         <NavLink 
           to="/settings"
-          className={({ isActive }) => 
-            isActive 
-              ? "flex items-center gap-2 py-2 px-3 rounded-md bg-accent/10" 
-              : "flex items-center gap-2 py-2 px-3 rounded-md hover:bg-accent/10"
-          }
+          className={({ isActive }) => {
+            return cn(
+              "flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200",
+              isActive ? "bg-accent/20 font-medium" : "hover:bg-accent/10",
+              isActive && theme === "light" ? "bg-accent/40 text-primary" : "",
+              isActive && theme === "dark" ? "bg-accent/20 text-accent-foreground" : ""
+            )
+          }}
         >
           <Settings className="h-5 w-5" />
           <span>Settings</span>

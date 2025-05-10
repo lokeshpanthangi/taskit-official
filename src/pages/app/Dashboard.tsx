@@ -1,163 +1,226 @@
 
-import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Clock, Calendar as CalendarIcon, AlertTriangle } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { LayoutDashboard, Check, Calendar, List, Filter, Clock } from "lucide-react";
+import { useOutletContext } from "react-router-dom";
+import { format, differenceInDays } from "date-fns";
+import { Progress } from "@/components/ui/progress";
+import { toast } from "@/components/ui/sonner";
+import { useTheme } from "next-themes";
 
-// Mock data for dashboard
-const priorityTasks = [
-  {
-    id: "task-1",
-    title: "Redesign landing page",
-    dueDate: "2025-06-15",
-    project: "Website Redesign",
-    priority: "high",
-  },
-  {
-    id: "task-2",
-    title: "Create content plan for Q3",
-    dueDate: "2025-06-10",
-    project: "Marketing Campaign",
-    priority: "urgent",
-  },
-  {
-    id: "task-3",
-    title: "Review product specifications",
-    dueDate: "2025-06-05",
-    project: "Product Launch",
-    priority: "medium",
-  },
-  {
-    id: "task-4",
-    title: "Prepare investor presentation",
-    dueDate: "2025-06-20",
-    project: "Funding Round",
-    priority: "high",
-  },
-  {
-    id: "task-5",
-    title: "Update team documentation",
-    dueDate: "2025-06-22",
-    project: "Team Onboarding",
-    priority: "low",
-  }
-];
+// Mock data - in a real app, this would come from your backend
+const mockStats = {
+  completedTasks: 24,
+  totalTasks: 36,
+  upcomingDeadlines: 5,
+  overdueDeadlines: 2,
+  projectProgress: 67,
+  recentActivity: [
+    { id: 1, action: "Completed task", item: "Design new homepage layout", time: "2 hours ago" },
+    { id: 2, action: "Created task", item: "Q3 Marketing Campaign", time: "5 hours ago" },
+    { id: 3, action: "Updated task", item: "Mobile layout optimization", time: "Yesterday" },
+    { id: 4, action: "Commented on", item: "Content migration", time: "2 days ago" },
+  ]
+};
+
+type OutletContextType = {
+  toggleDetailPanel: (taskId?: string) => void;
+};
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { toggleDetailPanel } = useOutletContext<OutletContextType>();
+  const { theme, setTheme } = useTheme();
+  const [loading, setLoading] = useState(true);
   
-  // Calculate days remaining format
-  const getDaysRemaining = (dueDate: string) => {
-    const today = new Date();
-    const due = new Date(dueDate);
-    const diffTime = due.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  useEffect(() => {
+    // Simulate loading
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 800);
     
-    if (diffDays === 0) return "Due today";
-    if (diffDays < 0) return `Overdue by ${Math.abs(diffDays)} days`;
-    if (diffDays === 1) return "Due tomorrow";
-    return `${diffDays} days remaining`;
+    return () => clearTimeout(timer);
+  }, []);
+  
+  const calculateCompletion = () => {
+    return Math.round((mockStats.completedTasks / mockStats.totalTasks) * 100);
   };
+  
+  const handleQuickAction = (action: string) => {
+    toast.success(`Action triggered: ${action}`);
+  };
+  
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-6 h-full items-center justify-center animate-pulse">
+        <LayoutDashboard size={48} className="text-primary opacity-50" />
+        <h2 className="text-2xl font-semibold text-muted-foreground">Loading dashboard...</h2>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back, {user?.name}</p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1">
+          <h1 className="font-semibold tracking-tight">Welcome to Your Dashboard</h1>
+          <p className="text-muted-foreground">Here's your productivity overview for today</p>
+        </div>
+        
+        <div className="flex gap-2">
+          <Button onClick={() => handleQuickAction("Add Task")} className="animate-scale-in hover-scale">
+            <Check className="mr-2 h-4 w-4" />
+            Quick Task
+          </Button>
+        </div>
       </div>
       
       {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="hover-lift animate-slide-in">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Task Completion</CardTitle>
+            <Check className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">23</div>
-            <p className="text-xs text-muted-foreground">
-              +4 from last week
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
-            <CheckCircle className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <div className="flex items-center space-x-2">
-              <Progress value={52} className="h-2" />
-              <div className="text-xs text-muted-foreground">52%</div>
+            <div className="text-2xl font-bold">
+              {mockStats.completedTasks}/{mockStats.totalTasks}
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Due Soon</CardTitle>
-            <Clock className="h-4 w-4 text-priority-high" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">7</div>
-            <p className="text-xs text-muted-foreground">
-              Due within 7 days
+            <Progress value={calculateCompletion()} className="mt-2 h-2" />
+            <p className="text-xs text-muted-foreground mt-2">
+              {calculateCompletion()}% complete
             </p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="hover-lift animate-slide-in [animation-delay:100ms]">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Projects</CardTitle>
-            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Upcoming Deadlines</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-muted-foreground">
-              2 in progress, 1 completed
+            <div className="text-2xl font-bold">{mockStats.upcomingDeadlines}</div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Next: Website Redesign (3 days)
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="hover-lift animate-slide-in [animation-delay:200ms]">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Overdue Tasks</CardTitle>
+            <Clock className="h-4 w-4 text-destructive" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-destructive">
+              {mockStats.overdueDeadlines}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Oldest: Content Migration (2 days)
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="hover-lift animate-slide-in [animation-delay:300ms]">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Project Progress</CardTitle>
+            <Filter className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{mockStats.projectProgress}%</div>
+            <Progress value={mockStats.projectProgress} className="mt-2 h-2" />
+            <p className="text-xs text-muted-foreground mt-2">
+              Website Redesign Project
             </p>
           </CardContent>
         </Card>
       </div>
       
-      {/* Priority Tasks */}
-      <div>
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Priority Tasks</CardTitle>
-                <CardDescription>Tasks requiring your attention</CardDescription>
-              </div>
-              <Button size="sm">View all tasks</Button>
-            </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Recent Activity */}
+        <Card className="gradient-border animate-fade-in">
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Your latest task updates</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {priorityTasks.map((task) => (
-                <div key={task.id} className="task-container flex flex-col md:flex-row gap-2 md:items-center md:justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      {task.priority === 'urgent' && <AlertTriangle className="w-4 h-4 text-priority-urgent" />}
-                      <h3 className="font-medium text-base">{task.title}</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {task.project}
-                    </p>
+              {mockStats.recentActivity.map((activity, index) => (
+                <div 
+                  key={activity.id} 
+                  className={`flex items-center justify-between p-2 rounded-md hover:bg-accent/5 cursor-pointer
+                    ${index === 0 ? 'animate-pop [animation-delay:100ms]' : ''}
+                    ${index === 1 ? 'animate-pop [animation-delay:200ms]' : ''}
+                    ${index === 2 ? 'animate-pop [animation-delay:300ms]' : ''}
+                    ${index === 3 ? 'animate-pop [animation-delay:400ms]' : ''}
+                  `}
+                  onClick={() => toggleDetailPanel("task-1")}
+                >
+                  <div>
+                    <p className="text-sm font-medium">{activity.action}: <span className="text-primary">{activity.item}</span></p>
+                    <p className="text-xs text-muted-foreground">{activity.time}</p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`priority-tag priority-${task.priority}`}>
-                      {task.priority}
-                    </span>
-                    <span className="text-sm text-muted-foreground whitespace-nowrap">
-                      {getDaysRemaining(task.dueDate)}
-                    </span>
-                  </div>
+                  <Button variant="ghost" size="sm" className="hover:bg-accent/10">
+                    View
+                  </Button>
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Quick Links */}
+        <Card className="gradient-border animate-fade-in">
+          <CardHeader>
+            <CardTitle>Quick Access</CardTitle>
+            <CardDescription>Frequently used tools and pages</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <Button 
+                variant="outline" 
+                className="flex flex-col h-24 items-center justify-center gap-2 hover:bg-accent/10 animate-scale-in"
+                onClick={() => window.location.href = "/tasks"}
+              >
+                <List size={24} />
+                <span>My Tasks</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="flex flex-col h-24 items-center justify-center gap-2 hover:bg-accent/10 animate-scale-in [animation-delay:100ms]"
+                onClick={() => window.location.href = "/calendar"}
+              >
+                <Calendar size={24} />
+                <span>Calendar</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="flex flex-col h-24 items-center justify-center gap-2 hover:bg-accent/10 animate-scale-in [animation-delay:200ms]"
+                onClick={() => window.location.href = "/projects"}
+              >
+                <Filter size={24} />
+                <span>Projects</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="flex flex-col h-24 items-center justify-center gap-2 hover:bg-accent/10 animate-scale-in [animation-delay:300ms]"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              >
+                {theme === "dark" ? (
+                  <>
+                    <Sun size={24} />
+                    <span>Light Mode</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon size={24} />
+                    <span>Dark Mode</span>
+                  </>
+                )}
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -165,5 +228,52 @@ const Dashboard = () => {
     </div>
   );
 };
+
+// Add Sun and Moon icons at the end of the file
+function Sun(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="m4.93 4.93 1.41 1.41" />
+      <path d="m17.66 17.66 1.41 1.41" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="m6.34 17.66-1.41 1.41" />
+      <path d="m19.07 4.93-1.41 1.41" />
+    </svg>
+  )
+}
+
+function Moon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+    </svg>
+  )
+}
 
 export default Dashboard;
