@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/hooks/use-toast";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -67,6 +67,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onSa
   const handleSubmit = () => {
     if (!title) {
       toast({
+        title: "Error",
         description: "Title is required",
         variant: "destructive",
       });
