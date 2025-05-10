@@ -12,21 +12,36 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { useProjects } from "@/hooks/useProjects";
 import { useTasks } from "@/hooks/useTasks";
+import { createTask } from "@/services/taskService";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { toast } from "@/components/ui/sonner";
 
+// Update the interface to include onSuccess and defaultDate properties
 interface CreateTaskModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (task: any) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
+  onSave?: (task: any) => void;
   parentTaskId?: string;
+  onSuccess?: () => void;
+  defaultDate?: Date | null;
 }
 
-const CreateTaskModal = ({ isOpen, onClose, onSave, parentTaskId }: CreateTaskModalProps) => {
+const CreateTaskModal = ({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  parentTaskId,
+  onSuccess,
+  defaultDate
+}: CreateTaskModalProps) => {
+  const { user } = useSupabaseAuth();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [dueDate, setDueDate] = useState<Date | undefined>(defaultDate || undefined);
   const [weight, setWeight] = useState<number>(3); // Default weight is 3 (medium)
   const [project, setProject] = useState("General");
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   const { projects, isLoading: projectsLoading } = useProjects();
   const { tasks, isLoading: tasksLoading } = useTasks();
@@ -36,29 +51,49 @@ const CreateTaskModal = ({ isOpen, onClose, onSave, parentTaskId }: CreateTaskMo
       // Reset form when opening
       setTitle("");
       setDescription("");
-      setDueDate(undefined);
+      setDueDate(defaultDate || undefined);
       setWeight(3);
       setProject("General");
     }
-  }, [isOpen]);
+  }, [isOpen, defaultDate]);
   
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim()) return;
     
-    onSave({
-      title: title.trim(),
-      description: description.trim(),
-      dueDate: dueDate ? dueDate.toISOString() : null,
-      weight, // Use weight instead of priority
-      project: project,
-      parentId: parentTaskId
-    });
+    setIsLoading(true);
     
-    onClose();
+    try {
+      const taskData = {
+        title: title.trim(),
+        description: description.trim(),
+        due_date: dueDate ? dueDate.toISOString() : null,
+        weight,
+        project_id: project !== "General" ? project : null,
+        parent_id: parentTaskId || null,
+        user_id: user?.id,
+        status: "todo"
+      };
+      
+      await createTask(taskData);
+      
+      toast.success("Task created successfully");
+      
+      if (onSuccess) {
+        onSuccess();
+      } else if (onClose) {
+        onClose();
+      }
+      
+    } catch (error) {
+      console.error("Error creating task:", error);
+      toast.error("Failed to create task");
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose && onClose()}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
@@ -183,11 +218,11 @@ const CreateTaskModal = ({ isOpen, onClose, onSave, parentTaskId }: CreateTaskMo
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={!title.trim()}>
-            Create Task
+          <Button onClick={handleSave} disabled={!title.trim() || isLoading}>
+            {isLoading ? "Creating..." : "Create Task"}
           </Button>
         </DialogFooter>
       </DialogContent>
