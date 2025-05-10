@@ -3,12 +3,13 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Filter, Sun, Moon } from "lucide-react";
+import { Plus, Filter, Sun, Moon, List, Calendar as CalendarIcon } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 import CreateTaskModal from "@/components/tasks/CreateTaskModal";
 import TaskItem from "@/components/tasks/TaskItem";
 import { useTheme } from "next-themes";
 import { toast } from "@/components/ui/sonner";
+import CalendarView, { CalendarEvent } from "@/components/calendar/CalendarView";
 
 // Mock data for tasks with hierarchical structure
 const initialTasks = [
@@ -115,6 +116,7 @@ const Tasks = () => {
   const [tasks, setTasks] = useState(initialTasks);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   
   // Organize tasks into hierarchy
   const buildTaskHierarchy = (allTasks: any[]) => {
@@ -174,6 +176,17 @@ const Tasks = () => {
     toast.info(`Task marked as ${status}`);
   };
   
+  // Convert tasks to calendar events
+  const getCalendarEvents = (): CalendarEvent[] => {
+    return tasks.map(task => ({
+      id: task.id,
+      title: task.title,
+      date: task.dueDate,
+      priority: task.priority,
+      status: task.status,
+    }));
+  };
+  
   // Get filtered flat list of tasks
   const filteredTasks = filterTasks(tasks);
   
@@ -206,6 +219,16 @@ const Tasks = () => {
         <div className="flex gap-2">
           <Button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} variant="outline" size="icon">
             {theme === "dark" ? <Sun className="h-[1.2rem] w-[1.2rem]" /> : <Moon className="h-[1.2rem] w-[1.2rem]" />}
+          </Button>
+          
+          <Button onClick={() => setViewMode("list")} variant={viewMode === "list" ? "default" : "outline"} size="icon">
+            <List className="h-[1.2rem] w-[1.2rem]" />
+            <span className="sr-only">List View</span>
+          </Button>
+          
+          <Button onClick={() => setViewMode("calendar")} variant={viewMode === "calendar" ? "default" : "outline"} size="icon">
+            <CalendarIcon className="h-[1.2rem] w-[1.2rem]" />
+            <span className="sr-only">Calendar View</span>
           </Button>
           
           <Button onClick={() => setIsCreateModalOpen(true)}>
@@ -244,22 +267,30 @@ const Tasks = () => {
       </div>
       
       <div className="grid gap-6">
-        <Card>
-          <CardHeader className="py-3">
-            <CardTitle>Task Hierarchy</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {hierarchicalTasks.length > 0 ? (
-                renderTaskHierarchy(hierarchicalTasks)
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">No tasks found. Try a different search term or create a new task.</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        {viewMode === "list" ? (
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle>Task Hierarchy</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {hierarchicalTasks.length > 0 ? (
+                  renderTaskHierarchy(hierarchicalTasks)
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No tasks found. Try a different search term or create a new task.</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <CalendarView
+            events={getCalendarEvents()}
+            onEventClick={(eventId) => toggleDetailPanel(eventId)}
+            onDateClick={() => setIsCreateModalOpen(true)}
+          />
+        )}
       </div>
       
       <CreateTaskModal 

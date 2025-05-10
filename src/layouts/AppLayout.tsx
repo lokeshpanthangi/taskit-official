@@ -5,6 +5,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import TaskDetailPanel from "@/components/tasks/TaskDetailPanel";
+import NotificationHeader from "@/components/layout/NotificationHeader";
 
 const AppLayout = () => {
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
@@ -35,7 +36,12 @@ const AppLayout = () => {
         {/* Main content area */}
         <div className="flex flex-col flex-1 overflow-hidden">
           {/* Top header */}
-          <Header />
+          <div className="flex items-center justify-between p-4 border-b">
+            <Header />
+            <div className="flex items-center gap-2">
+              <NotificationHeader toggleDetailPanel={toggleDetailPanel} />
+            </div>
+          </div>
           
           {/* Content with optional right panel */}
           <div className="flex flex-1 overflow-hidden">
