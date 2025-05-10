@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { X, Star, Calendar, CheckCircle, Edit, Trash } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -12,6 +11,23 @@ import { supabase } from "@/integrations/supabase/client";
 interface TaskDetailPanelProps {
   taskId: string | null;
   onClose: () => void;
+}
+
+interface TaskData {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  priority: number;
+  due_date?: string;
+  project_id?: string;
+  parent_id?: string;
+  user_id: string;
+  created_at?: string;
+  updated_at?: string;
+  projects?: {
+    name?: string;
+  };
 }
 
 const TaskDetailPanel = ({ taskId, onClose }: TaskDetailPanelProps) => {
@@ -79,10 +95,10 @@ const TaskDetailPanel = ({ taskId, onClose }: TaskDetailPanelProps) => {
         if (childError) throw childError;
         
         // Process task data
-        const processedTask = {
+        const processedTask = taskData ? {
           ...taskData,
           project: taskData.projects?.name,
-        };
+        } : null;
         
         setTask(processedTask);
         setChildTasks(childTasksData || []);

@@ -32,10 +32,10 @@ export const getCurrentUser = async () => {
   return {
     id: user.id,
     email: user.email,
-    first_name: profile?.first_name,
-    last_name: profile?.last_name,
-    avatar_url: profile?.avatar_url,
-    created_at: profile?.created_at,
+    first_name: profile?.first_name || null,
+    last_name: profile?.last_name || null,
+    avatar_url: profile?.avatar_url || null,
+    created_at: profile?.created_at || null,
   };
 };
 
