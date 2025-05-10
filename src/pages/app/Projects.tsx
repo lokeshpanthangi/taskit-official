@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import CreateProjectModal from "@/components/projects/CreateProjectModal";
 import ProjectCard from "@/components/projects/ProjectCard";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
@@ -35,6 +36,7 @@ const Projects = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success("Project created successfully!");
+      setIsCreateModalOpen(false);
     },
     onError: (error) => {
       console.error("Error creating project:", error);
@@ -51,7 +53,6 @@ const Projects = () => {
       priority: newProject.priority,
       tags: newProject.tags,
     });
-    setIsCreateModalOpen(false);
   };
   
   // Helper function to get team members based on project tasks
@@ -155,11 +156,18 @@ const Projects = () => {
         </div>
       )}
       
-      <CreateProjectModal 
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSave={handleCreateProject}
-      />
+      {/* Project creation modal */}
+      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+          </DialogHeader>
+          <CreateProjectModal 
+            onClose={() => setIsCreateModalOpen(false)}
+            onSave={handleCreateProject}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

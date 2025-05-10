@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,6 @@ import { createProject } from "@/services/projectService";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { toast } from "@/components/ui/sonner";
 
-// Update the interface to include onSuccess property
 interface CreateProjectModalProps {
   isOpen?: boolean;
   onClose?: () => void;
@@ -49,6 +47,33 @@ const CreateProjectModal = ({ isOpen, onClose, onSave, onSuccess }: CreateProjec
   
   const handleSave = async () => {
     if (!name.trim()) return;
+    
+    if (onSave) {
+      onSave({
+        name: name.trim(),
+        description: description.trim(),
+        startDate: startDate.toISOString(),
+        dueDate: dueDate.toISOString(),
+        priority,
+        tags,
+        user_id: user?.id
+      });
+      
+      // Reset form
+      setName("");
+      setDescription("");
+      setStartDate(new Date());
+      setDueDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+      setPriority(3);
+      setTags([]);
+      setCurrentTag("");
+      
+      if (onClose) {
+        onClose();
+      }
+      
+      return;
+    }
     
     setIsLoading(true);
     

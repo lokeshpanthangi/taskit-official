@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ const Tasks = () => {
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [topUrgentTasks, setTopUrgentTasks] = useState<Task[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"all" | "priority">("all");
   const { isAuthenticated, isLoading: authLoading, user } = useSupabaseAuth();
   const queryClient = useQueryClient();
   
@@ -243,7 +245,7 @@ const Tasks = () => {
     <div className="space-y-6 animate-fade-in w-full">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="font-semibold tracking-tight">Tasks</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Tasks</h1>
           <p className="text-muted-foreground">View and manage all your tasks</p>
         </div>
         
@@ -269,22 +271,45 @@ const Tasks = () => {
         </div>
       </div>
       
-      {topUrgentTasks.length > 0 && (
-        <Card className="gradient-border bg-card">
-          <CardHeader>
-            <CardTitle className="text-lg">Top Priority Tasks</CardTitle>
+      {/* Tabs for All Tasks / Top Priority Tasks */}
+      <div className="flex space-x-2 border-b">
+        <Button
+          variant="ghost"
+          className={`rounded-none border-b-2 ${activeTab === "all" ? "border-primary" : "border-transparent"}`}
+          onClick={() => setActiveTab("all")}
+        >
+          All Tasks
+        </Button>
+        <Button
+          variant="ghost"
+          className={`rounded-none border-b-2 ${activeTab === "priority" ? "border-primary" : "border-transparent"}`}
+          onClick={() => setActiveTab("priority")}
+        >
+          Top Priority Tasks
+        </Button>
+      </div>
+      
+      {activeTab === "priority" && topUrgentTasks.length > 0 && (
+        <Card className="bg-card border-0 shadow-md">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl">Top Priority Tasks</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {topUrgentTasks.map(task => (
                 <div 
                   key={task.id}
-                  className="flex items-center justify-between p-3 rounded-md border bg-secondary/30 cursor-pointer hover:bg-secondary/50"
+                  className="flex items-center justify-between p-3 rounded-md bg-secondary/20 cursor-pointer hover:bg-secondary/30"
                   onClick={() => handleTaskSelect(task.id)}
                 >
                   <div className="flex items-center space-x-3">
-                    <Badge variant="destructive" className="rounded-full">{task.priorityScore?.toFixed(1) || task.priority}</Badge>
-                    <span>{task.title}</span>
+                    <Badge 
+                      variant="destructive" 
+                      className="rounded-full px-2.5 py-0.5"
+                    >
+                      {task.priorityScore?.toFixed(1) || task.priority}
+                    </Badge>
+                    <span className="font-medium">{task.title}</span>
                   </div>
                   <div className="text-sm text-muted-foreground">
                     {task.due_date ? new Date(task.due_date).toLocaleDateString() : "No due date"}
@@ -296,68 +321,72 @@ const Tasks = () => {
         </Card>
       )}
       
-      <div className="flex flex-col gap-4 md:flex-row">
-        <div className="relative flex-1">
-          <Input 
-            placeholder="Search tasks..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full"
-          />
-        </div>
-        
-        <div className="flex gap-2">
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <option value="all">All Tasks</option>
-            <option value="active">Active</option>
-            <option value="completed">Completed</option>
-          </select>
+      {activeTab === "all" && (
+        <>
+          <div className="flex flex-col gap-4 md:flex-row">
+            <div className="relative flex-1">
+              <Input 
+                placeholder="Search tasks..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="all">All Tasks</option>
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+              </select>
+              
+              <Button variant="outline">
+                <Filter className="mr-2 h-4 w-4" />
+                Filter
+              </Button>
+            </div>
+          </div>
           
-          <Button variant="outline">
-            <Filter className="mr-2 h-4 w-4" />
-            Filter
-          </Button>
-        </div>
-      </div>
-      
-      <div className="grid gap-6">
-        {viewMode === "list" ? (
-          <Card className="gradient-border bg-card">
-            <CardHeader className="py-3">
-              <CardTitle>Task Hierarchy</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {tasks && tasks.length > 0 && hierarchicalTasks.length === 0 && searchQuery ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No tasks found matching "{searchQuery}". Try a different search term.</p>
+          <div className="grid gap-6">
+            {viewMode === "list" ? (
+              <Card className="gradient-border bg-card">
+                <CardHeader className="py-3">
+                  <CardTitle>Task Hierarchy</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {tasks && tasks.length > 0 && hierarchicalTasks.length === 0 && searchQuery ? (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">No tasks found matching "{searchQuery}". Try a different search term.</p>
+                      </div>
+                    ) : tasks && tasks.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">No tasks found. Create a new task to get started.</p>
+                      </div>
+                    ) : hierarchicalTasks.length > 0 ? (
+                      renderTaskHierarchy(hierarchicalTasks)
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">Loading tasks...</p>
+                      </div>
+                    )}
                   </div>
-                ) : tasks && tasks.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No tasks found. Create a new task to get started.</p>
-                  </div>
-                ) : hierarchicalTasks.length > 0 ? (
-                  renderTaskHierarchy(hierarchicalTasks)
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">Loading tasks...</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <CalendarView
-            events={getCalendarEvents()}
-            onEventClick={handleTaskSelect}
-            onDateClick={() => setIsCreateModalOpen(true)}
-          />
-        )}
-      </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <CalendarView
+                events={getCalendarEvents()}
+                onEventClick={handleTaskSelect}
+                onDateClick={() => setIsCreateModalOpen(true)}
+              />
+            )}
+          </div>
+        </>
+      )}
       
       <CreateTaskModal 
         isOpen={isCreateModalOpen}
