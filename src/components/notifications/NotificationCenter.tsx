@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Bell, X, Check } from "lucide-react";
 import {
   Popover,
@@ -12,18 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-
-// Types for our notification system
-export interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'task_due' | 'task_reminder' | 'system' | 'info';
-  read: boolean;
-  date: Date;
-  taskId?: string;
-  priority?: number;
-}
+import { Notification } from "@/services/notificationService";
 
 interface NotificationCenterProps {
   notifications: Notification[];
@@ -58,6 +47,7 @@ const NotificationCenter = ({
       onNotificationRead(notification.id);
     }
     onNotificationClick(notification);
+    setOpen(false); // Close the popover after clicking
   };
   
   // Get appropriate icon and color for notification type

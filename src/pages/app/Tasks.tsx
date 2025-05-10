@@ -12,100 +12,15 @@ import { toast } from "@/components/ui/sonner";
 import CalendarView, { CalendarEvent } from "@/components/calendar/CalendarView";
 import { differenceInDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-
-// Mock data for tasks with hierarchical structure
-const initialTasks = [
-  {
-    id: "task-1",
-    title: "Website Redesign Project",
-    description: "Complete overhaul of the company website",
-    status: "In Progress",
-    priority: 5,
-    dueDate: "2025-06-15",
-    project: "Website Redesign",
-    parentId: null,
-  },
-  {
-    id: "task-1-1",
-    title: "Design new homepage layout",
-    description: "Create wireframes and mockups for the new homepage",
-    status: "Completed",
-    priority: 4,
-    dueDate: "2025-06-01",
-    project: "Website Redesign",
-    parentId: "task-1",
-  },
-  {
-    id: "task-1-2",
-    title: "Implement responsive design",
-    description: "Ensure the website works on all device sizes",
-    status: "In Progress",
-    priority: 4,
-    dueDate: "2025-06-10",
-    project: "Website Redesign",
-    parentId: "task-1",
-  },
-  {
-    id: "task-1-2-1",
-    title: "Mobile layout optimization",
-    description: "Fine-tune the layout for mobile devices",
-    status: "Not Started",
-    priority: 3,
-    dueDate: "2025-06-08",
-    project: "Website Redesign",
-    parentId: "task-1-2",
-  },
-  {
-    id: "task-1-3",
-    title: "Content migration",
-    description: "Move content from old site to new design",
-    status: "Not Started",
-    priority: 3,
-    dueDate: "2025-06-12",
-    project: "Website Redesign",
-    parentId: "task-1",
-  },
-  {
-    id: "task-2",
-    title: "Q3 Marketing Campaign",
-    description: "Plan and execute marketing campaign for Q3",
-    status: "Not Started",
-    priority: 5,
-    dueDate: "2025-06-20",
-    project: "Marketing Campaign",
-    parentId: null,
-  },
-  {
-    id: "task-2-1",
-    title: "Define target audience",
-    description: "Research and document primary customer segments",
-    status: "In Progress",
-    priority: 4,
-    dueDate: "2025-06-05",
-    project: "Marketing Campaign",
-    parentId: "task-2",
-  },
-  {
-    id: "task-2-2",
-    title: "Create content calendar",
-    description: "Schedule all content releases for the campaign",
-    status: "Not Started",
-    priority: 4,
-    dueDate: "2025-06-10",
-    project: "Marketing Campaign",
-    parentId: "task-2",
-  },
-  {
-    id: "task-3",
-    title: "New Product Launch Preparation",
-    description: "Prepare for upcoming product launch next quarter",
-    status: "Not Started",
-    priority: 5,
-    dueDate: "2025-07-15",
-    project: "Product Launch",
-    parentId: null,
-  }
-];
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { 
+  fetchTasks,
+  createTask, 
+  updateTask,
+  buildTaskHierarchy,
+  Task
+} from "@/services/taskService";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 type OutletContextType = {
   toggleDetailPanel: (taskId?: string) => void;
@@ -115,76 +30,71 @@ const Tasks = () => {
   const { toggleDetailPanel } = useOutletContext<OutletContextType>();
   const { theme, setTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
-  const [tasks, setTasks] = useState(initialTasks);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
-  const [topUrgentTasks, setTopUrgentTasks] = useState<any[]>([]);
+  const [topUrgentTasks, setTopUrgentTasks] = useState<Task[]>([]);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const { isAuthenticated, isLoading: authLoading } = useSupabaseAuth();
+  const queryClient = useQueryClient();
+  
+  // Task drag-and-drop state
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  
+  // Fetch tasks with React Query
+  const { data: tasks, isLoading: tasksLoading } = useQuery({
+    queryKey: ['tasks'],
+    queryFn: fetchTasks,
+    enabled: isAuthenticated,
+  });
+  
+  // Create task mutation
+  const createTaskMutation = useMutation({
+    mutationFn: createTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      setIsCreateModalOpen(false);
+      toast.success("Task created successfully!");
+    },
+    onError: (error) => {
+      console.error("Error creating task:", error);
+      toast.error("Failed to create task");
+    },
+  });
+  
+  // Update task mutation
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string, updates: Partial<Task> }) => 
+      updateTask(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+    onError: (error) => {
+      console.error("Error updating task:", error);
+      toast.error("Failed to update task");
+    },
+  });
   
   // Calculate priority scores for all tasks and set top urgent tasks
   useEffect(() => {
-    const tasksWithScores = tasks.map(task => {
-      // Calculate priority score
-      const dueDate = task.dueDate ? new Date(task.dueDate) : null;
-      let priorityScore = task.priority || 3; // Default priority weight
-      
-      if (dueDate) {
-        const daysUntilDue = differenceInDays(dueDate, new Date());
-        if (daysUntilDue < 0) {
-          // Overdue tasks get highest priority
-          priorityScore = priorityScore * 10;
-        } else {
-          // Formula: weight * (10 / (daysUntilDue + 1)) - higher weight and fewer days = higher score
-          priorityScore = priorityScore * (10 / (daysUntilDue + 1));
-        }
-      }
-      
-      return {
-        ...task,
-        priorityScore: Math.round(priorityScore * 10) / 10
-      };
-    });
-    
-    // Sort by priority score and get top 5
-    const sortedByPriority = [...tasksWithScores].sort((a, b) => b.priorityScore - a.priorityScore);
-    setTopUrgentTasks(sortedByPriority.slice(0, 5));
+    if (tasks) {
+      // Sort by priority score and get top 5
+      const sortedByPriority = [...tasks].sort((a, b) => 
+        (b.priorityScore || 0) - (a.priorityScore || 0)
+      );
+      setTopUrgentTasks(sortedByPriority.slice(0, 5));
+    }
   }, [tasks]);
   
-  // Organize tasks into hierarchy
-  const buildTaskHierarchy = (allTasks: any[]) => {
-    const taskMap = new Map();
-    const rootTasks: any[] = [];
-    
-    // First pass: Add all tasks to the map
-    allTasks.forEach(task => {
-      // Create a new object that will hold children
-      taskMap.set(task.id, { ...task, children: [] });
-    });
-    
-    // Second pass: Establish parent-child relationships
-    allTasks.forEach(task => {
-      const taskWithChildren = taskMap.get(task.id);
-      
-      if (task.parentId && taskMap.has(task.parentId)) {
-        // Add this task as a child to its parent
-        const parent = taskMap.get(task.parentId);
-        parent.children.push(taskWithChildren);
-      } else {
-        // This is a root task (no parent)
-        rootTasks.push(taskWithChildren);
-      }
-    });
-    
-    return rootTasks;
-  };
-  
   // Apply search filter and status filter
-  const filterTasks = (allTasks: any[]) => {
+  const filterTasks = (allTasks: Task[]) => {
+    if (!allTasks) return [];
+    
     return allTasks.filter(task => {
       const matchesSearch = 
         task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        task.project.toLowerCase().includes(searchQuery.toLowerCase());
+        (task.project && task.project.toLowerCase().includes(searchQuery.toLowerCase()));
         
       const matchesStatus = 
         filterStatus === "all" || 
@@ -196,50 +106,132 @@ const Tasks = () => {
   };
   
   const handleAddTask = (newTask: any) => {
-    setTasks([...tasks, newTask]);
-    toast.success("Task created successfully!");
+    createTaskMutation.mutate({
+      title: newTask.title,
+      description: newTask.description,
+      priority: newTask.weight || 3,
+      due_date: newTask.dueDate,
+      project_id: newTask.project !== "General" ? newTask.project : undefined,
+      parent_id: newTask.parentId || null,
+      status: "Not Started"
+    });
   };
   
   const handleStatusChange = (taskId: string, status: string) => {
-    const updatedTasks = tasks.map(task => 
-      task.id === taskId ? { ...task, status } : task
-    );
-    setTasks(updatedTasks);
-    toast.info(`Task marked as ${status}`);
+    updateTaskMutation.mutate({
+      id: taskId,
+      updates: { status }
+    });
+  };
+  
+  const handlePriorityChange = (taskId: string, priority: number) => {
+    updateTaskMutation.mutate({
+      id: taskId,
+      updates: { priority }
+    });
+    
+    toast.success(`Priority updated to ${priority}`);
   };
   
   // Convert tasks to calendar events
   const getCalendarEvents = (): CalendarEvent[] => {
+    if (!tasks) return [];
+    
     return tasks.map(task => ({
       id: task.id,
       title: task.title,
-      date: task.dueDate,
+      date: task.due_date || "",
       priority: task.priority,
       status: task.status,
     }));
   };
   
+  // Handle task selection
+  const handleTaskSelect = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    toggleDetailPanel(taskId);
+  };
+  
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, taskId: string) => {
+    setDraggedTaskId(taskId);
+    e.dataTransfer.setData('text/plain', taskId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+  
+  const handleDrop = (e: React.DragEvent, targetTaskId: string) => {
+    e.preventDefault();
+    
+    if (!draggedTaskId || draggedTaskId === targetTaskId) return;
+    
+    // Find the dragged task
+    const draggedTask = tasks?.find(t => t.id === draggedTaskId);
+    
+    if (draggedTask) {
+      // Update the parent ID of the dragged task to be the target task's ID
+      updateTaskMutation.mutate({
+        id: draggedTaskId,
+        updates: { parent_id: targetTaskId }
+      });
+      
+      toast.success("Task moved successfully");
+    }
+    
+    setDraggedTaskId(null);
+  };
+  
   // Get filtered flat list of tasks
-  const filteredTasks = filterTasks(tasks);
+  const filteredTasks = filterTasks(tasks || []);
   
   // Build hierarchy from filtered tasks
   const hierarchicalTasks = buildTaskHierarchy(filteredTasks);
   
   // Recursively render tasks and their children
-  const renderTaskHierarchy = (taskList: any[], level = 0) => {
+  const renderTaskHierarchy = (taskList: Task[], level = 0) => {
     return taskList.map(task => (
       <TaskItem
         key={task.id}
         task={task}
         level={level}
-        onSelect={(taskId) => toggleDetailPanel(taskId)}
+        onSelect={handleTaskSelect}
         onStatusChange={handleStatusChange}
+        onPriorityChange={handlePriorityChange}
         isHighPriority={topUrgentTasks.some(urgent => urgent.id === task.id)}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        selected={selectedTaskId === task.id}
       >
         {task.children && task.children.length > 0 && renderTaskHierarchy(task.children, level + 1)}
       </TaskItem>
     ));
   };
+  
+  if (authLoading || tasksLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-pulse text-center">
+          <h2 className="text-2xl font-semibold text-muted-foreground">Loading tasks...</h2>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col gap-6 h-full items-center justify-center">
+        <h2 className="text-2xl font-semibold">Please log in to view your tasks</h2>
+        <Button asChild>
+          <a href="/login">Log In</a>
+        </Button>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -282,14 +274,14 @@ const Tasks = () => {
                 <div 
                   key={task.id}
                   className="flex items-center justify-between p-3 rounded-md border bg-secondary/30 cursor-pointer hover:bg-secondary/50"
-                  onClick={() => toggleDetailPanel(task.id)}
+                  onClick={() => handleTaskSelect(task.id)}
                 >
                   <div className="flex items-center space-x-3">
-                    <Badge variant="destructive" className="rounded-full">{task.priorityScore.toFixed(1)}</Badge>
+                    <Badge variant="destructive" className="rounded-full">{task.priorityScore?.toFixed(1) || task.priority}</Badge>
                     <span>{task.title}</span>
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "No due date"}
+                    {task.due_date ? new Date(task.due_date).toLocaleDateString() : "No due date"}
                   </div>
                 </div>
               ))}
@@ -347,7 +339,7 @@ const Tasks = () => {
         ) : (
           <CalendarView
             events={getCalendarEvents()}
-            onEventClick={(eventId) => toggleDetailPanel(eventId)}
+            onEventClick={handleTaskSelect}
             onDateClick={() => setIsCreateModalOpen(true)}
           />
         )}

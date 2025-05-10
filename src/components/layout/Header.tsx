@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bell, Search, User, Menu } from "lucide-react";
+import { Search, User, Menu } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
@@ -13,9 +13,49 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import NotificationHeader from "./NotificationHeader";
+import { getCurrentUser, signOut } from "@/services/authService";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Header = () => {
-  const { user, logout } = useAuth();
+  const { user: authUser, logout } = useAuth();
+  const { isAuthenticated, user: supabaseUser } = useSupabaseAuth();
+  const [profile, setProfile] = useState<any>(null);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Fetch user profile
+  useEffect(() => {
+    if (isAuthenticated && supabaseUser) {
+      const fetchProfile = async () => {
+        try {
+          const profile = await getCurrentUser();
+          setProfile(profile);
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+        }
+      };
+      
+      fetchProfile();
+    }
+  }, [isAuthenticated, supabaseUser]);
+  
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      // Clear all queries from the cache
+      queryClient.clear();
+      toast.success("Logged out successfully");
+      navigate("/login");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Failed to log out");
+    }
+  };
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -39,42 +79,50 @@ const Header = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon">
-            <Bell className="h-5 w-5" />
-            <span className="sr-only">Notifications</span>
-          </Button>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src={user?.avatarUrl || ""} alt={user?.name || ""} />
-                  <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel>
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user?.name}</p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {user?.email}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <a href="/profile">Profile</a>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <a href="/settings">Settings</a>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout}>
-                Log out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {isAuthenticated ? (
+            <>
+              <NotificationHeader 
+                toggleDetailPanel={(taskId) => navigate(`/tasks?taskId=${taskId}`)} 
+              />
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={profile?.avatar_url || ""} alt={profile?.first_name || ""} />
+                      <AvatarFallback>
+                        {profile?.first_name?.charAt(0) || supabaseUser?.email?.charAt(0).toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}` : 'User'}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {supabaseUser?.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <a href="/settings">Settings</a>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            <Button variant="outline" asChild>
+              <a href="/login">Log In</a>
+            </Button>
+          )}
         </div>
       </div>
     </header>

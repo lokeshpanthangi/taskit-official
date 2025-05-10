@@ -8,53 +8,164 @@ import { format, differenceInDays } from "date-fns";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/components/ui/sonner";
 import { useTheme } from "next-themes";
-
-// Mock data - in a real app, this would come from your backend
-const mockStats = {
-  completedTasks: 24,
-  totalTasks: 36,
-  upcomingDeadlines: 5,
-  overdueDeadlines: 2,
-  projectProgress: 67,
-  recentActivity: [
-    { id: 1, action: "Completed task", item: "Design new homepage layout", time: "2 hours ago" },
-    { id: 2, action: "Created task", item: "Q3 Marketing Campaign", time: "5 hours ago" },
-    { id: 3, action: "Updated task", item: "Mobile layout optimization", time: "Yesterday" },
-    { id: 4, action: "Commented on", item: "Content migration", time: "2 days ago" },
-  ]
-};
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { fetchTasks, Task } from "@/services/taskService";
+import { fetchProjects } from "@/services/projectService";
+import { createNotification } from "@/services/notificationService";
+import { useQuery } from "@tanstack/react-query";
 
 type OutletContextType = {
   toggleDetailPanel: (taskId?: string) => void;
 };
 
+interface DashboardStats {
+  completedTasks: number;
+  totalTasks: number;
+  upcomingDeadlines: number;
+  overdueDeadlines: number;
+  projectProgress: number;
+  recentActivity: {
+    id: string;
+    action: string;
+    item: string;
+    time: string;
+  }[];
+}
+
 const Dashboard = () => {
   const { toggleDetailPanel } = useOutletContext<OutletContextType>();
   const { theme, setTheme } = useTheme();
-  const [loading, setLoading] = useState(true);
+  const { isAuthenticated, isLoading: authLoading } = useSupabaseAuth();
+  
+  // Fetch tasks with React Query
+  const { data: tasks, isLoading: tasksLoading } = useQuery({
+    queryKey: ['tasks'],
+    queryFn: fetchTasks,
+    enabled: isAuthenticated,
+  });
+  
+  // Fetch projects with React Query
+  const { data: projects, isLoading: projectsLoading } = useQuery({
+    queryKey: ['projects'],
+    queryFn: fetchProjects,
+    enabled: isAuthenticated,
+  });
+  
+  // Calculate dashboard stats
+  const [stats, setStats] = useState<DashboardStats>({
+    completedTasks: 0,
+    totalTasks: 0,
+    upcomingDeadlines: 0,
+    overdueDeadlines: 0,
+    projectProgress: 0,
+    recentActivity: [],
+  });
   
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 800);
+    if (tasks && tasks.length > 0) {
+      // Count completed and total tasks
+      const completedTasks = tasks.filter(task => task.status === "Completed").length;
+      const totalTasks = tasks.length;
+      
+      // Count upcoming and overdue deadlines
+      const today = new Date();
+      const upcomingDeadlines = tasks.filter(task => {
+        if (!task.due_date || task.status === "Completed") return false;
+        const dueDate = new Date(task.due_date);
+        const diff = differenceInDays(dueDate, today);
+        return diff >= 0 && diff <= 7;
+      }).length;
+      
+      const overdueDeadlines = tasks.filter(task => {
+        if (!task.due_date || task.status === "Completed") return false;
+        const dueDate = new Date(task.due_date);
+        return differenceInDays(dueDate, today) < 0;
+      }).length;
+      
+      // Calculate project progress
+      let projectProgress = 0;
+      if (projects && projects.length > 0) {
+        const projectWithMostTasks = projects.reduce((prev, current) => {
+          const prevTaskCount = tasks.filter(t => t.project_id === prev.id).length;
+          const currentTaskCount = tasks.filter(t => t.project_id === current.id).length;
+          return currentTaskCount > prevTaskCount ? current : prev;
+        });
+        
+        projectProgress = projectWithMostTasks.progress || 0;
+      }
+      
+      // Recent activity based on task updates
+      const recentActivity = tasks
+        .sort((a, b) => new Date(b.updated_at || "").getTime() - new Date(a.updated_at || "").getTime())
+        .slice(0, 4)
+        .map(task => ({
+          id: task.id,
+          action: task.status === "Completed" ? "Completed task" : (task.created_at === task.updated_at ? "Created task" : "Updated task"),
+          item: task.title,
+          time: formatTimeAgo(new Date(task.updated_at || task.created_at || "")),
+        }));
+      
+      setStats({
+        completedTasks,
+        totalTasks,
+        upcomingDeadlines,
+        overdueDeadlines,
+        projectProgress,
+        recentActivity,
+      });
+    }
+  }, [tasks, projects]);
+  
+  const formatTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
-    return () => clearTimeout(timer);
-  }, []);
+    if (diffInHours < 1) return "Just now";
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours === 1 ? "" : "s"} ago`;
+    if (diffInHours < 48) return "Yesterday";
+    return `${Math.floor(diffInHours / 24)} days ago`;
+  };
   
   const calculateCompletion = () => {
-    return Math.round((mockStats.completedTasks / mockStats.totalTasks) * 100);
+    return stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0;
   };
   
-  const handleQuickAction = (action: string) => {
-    toast.success(`Action triggered: ${action}`);
+  const handleQuickAction = async (action: string) => {
+    try {
+      if (action === "Add Task") {
+        toggleDetailPanel();
+        
+        // Create notification for demo
+        await createNotification({
+          title: "Quick task created",
+          message: "You've created a task from the dashboard",
+          type: "info",
+          read: false,
+        });
+      }
+      toast.success(`Action triggered: ${action}`);
+    } catch (error) {
+      console.error("Error in quick action:", error);
+      toast.error("Error performing action");
+    }
   };
   
-  if (loading) {
+  if (authLoading || tasksLoading || projectsLoading) {
     return (
       <div className="flex flex-col gap-6 h-full items-center justify-center animate-pulse">
         <LayoutDashboard size={48} className="text-primary opacity-50" />
         <h2 className="text-2xl font-semibold text-muted-foreground">Loading dashboard...</h2>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col gap-6 h-full items-center justify-center">
+        <h2 className="text-2xl font-semibold">Please log in to view your dashboard</h2>
+        <Button asChild>
+          <a href="/login">Log In</a>
+        </Button>
       </div>
     );
   }
@@ -84,7 +195,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockStats.completedTasks}/{mockStats.totalTasks}
+              {stats.completedTasks}/{stats.totalTasks}
             </div>
             <Progress value={calculateCompletion()} className="mt-2 h-2" />
             <p className="text-xs text-muted-foreground mt-2">
@@ -99,9 +210,9 @@ const Dashboard = () => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.upcomingDeadlines}</div>
+            <div className="text-2xl font-bold">{stats.upcomingDeadlines}</div>
             <p className="text-xs text-muted-foreground mt-2">
-              Next: Website Redesign (3 days)
+              Next 7 days
             </p>
           </CardContent>
         </Card>
@@ -113,10 +224,10 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">
-              {mockStats.overdueDeadlines}
+              {stats.overdueDeadlines}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Oldest: Content Migration (2 days)
+              Tasks past their due date
             </p>
           </CardContent>
         </Card>
@@ -127,10 +238,10 @@ const Dashboard = () => {
             <Filter className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.projectProgress}%</div>
-            <Progress value={mockStats.projectProgress} className="mt-2 h-2" />
+            <div className="text-2xl font-bold">{stats.projectProgress}%</div>
+            <Progress value={stats.projectProgress} className="mt-2 h-2" />
             <p className="text-xs text-muted-foreground mt-2">
-              Website Redesign Project
+              {projects && projects[0]?.name || "Active Project"}
             </p>
           </CardContent>
         </Card>
@@ -145,26 +256,32 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockStats.recentActivity.map((activity, index) => (
-                <div 
-                  key={activity.id} 
-                  className={`flex items-center justify-between p-2 rounded-md hover:bg-accent/5 cursor-pointer
-                    ${index === 0 ? 'animate-pop [animation-delay:100ms]' : ''}
-                    ${index === 1 ? 'animate-pop [animation-delay:200ms]' : ''}
-                    ${index === 2 ? 'animate-pop [animation-delay:300ms]' : ''}
-                    ${index === 3 ? 'animate-pop [animation-delay:400ms]' : ''}
-                  `}
-                  onClick={() => toggleDetailPanel("task-1")}
-                >
-                  <div>
-                    <p className="text-sm font-medium">{activity.action}: <span className="text-primary">{activity.item}</span></p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
+              {stats.recentActivity.length > 0 ? (
+                stats.recentActivity.map((activity, index) => (
+                  <div 
+                    key={activity.id} 
+                    className={`flex items-center justify-between p-2 rounded-md hover:bg-accent/5 cursor-pointer
+                      ${index === 0 ? 'animate-pop [animation-delay:100ms]' : ''}
+                      ${index === 1 ? 'animate-pop [animation-delay:200ms]' : ''}
+                      ${index === 2 ? 'animate-pop [animation-delay:300ms]' : ''}
+                      ${index === 3 ? 'animate-pop [animation-delay:400ms]' : ''}
+                    `}
+                    onClick={() => toggleDetailPanel(activity.id)}
+                  >
+                    <div>
+                      <p className="text-sm font-medium">{activity.action}: <span className="text-primary">{activity.item}</span></p>
+                      <p className="text-xs text-muted-foreground">{activity.time}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" className="hover:bg-accent/10">
+                      View
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="sm" className="hover:bg-accent/10">
-                    View
-                  </Button>
+                ))
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  No recent activity found
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>

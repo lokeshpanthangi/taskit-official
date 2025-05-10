@@ -1,8 +1,9 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
 
@@ -31,8 +32,32 @@ import NotFound from "./pages/NotFound";
 
 // Route Protection
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import { useSupabaseAuth } from "./hooks/useSupabaseAuth";
+import { useEffect } from "react";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
+// Check auth status component
+const AuthRedirect = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading } = useSupabaseAuth();
+  
+  if (isLoading) {
+    return <div className="h-screen flex items-center justify-center">Loading...</div>;
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+  
+  return <>{children}</>;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -55,7 +80,13 @@ const App = () => (
               </Route>
 
               {/* App Routes - Protected */}
-              <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+              <Route 
+                element={
+                  <AuthRedirect>
+                    <AppLayout />
+                  </AuthRedirect>
+                }
+              >
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/tasks" element={<Tasks />} />
                 <Route path="/calendar" element={<Calendar />} />

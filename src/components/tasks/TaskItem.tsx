@@ -5,9 +5,10 @@ import { Star, ChevronRight, ChevronDown, Check, GripVertical } from "lucide-rea
 import { format, isAfter, isBefore, isToday } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Task } from "@/services/taskService";
 
 interface TaskItemProps {
-  task: any;
+  task: Task;
   children?: React.ReactNode;
   level?: number;
   onSelect: (taskId: string) => void;
@@ -38,9 +39,9 @@ const TaskItem = ({
   
   // Calculate due date status
   const getDueDateStatus = () => {
-    if (!task.dueDate) return "none";
+    if (!task.due_date) return "none";
     const today = new Date();
-    const dueDate = new Date(task.dueDate);
+    const dueDate = new Date(task.due_date);
     
     if (isToday(dueDate)) return "today";
     if (isBefore(dueDate, today)) return "overdue";
@@ -151,7 +152,7 @@ const TaskItem = ({
                 </TooltipProvider>
               </div>
               
-              {task.dueDate && (
+              {task.due_date && (
                 <span 
                   className={cn(
                     "text-sm whitespace-nowrap px-2 py-0.5 rounded-full",
@@ -161,7 +162,7 @@ const TaskItem = ({
                     dueDateStatus === "future" && "bg-muted text-muted-foreground"
                   )}
                 >
-                  {format(new Date(task.dueDate), "MMM d")}
+                  {format(new Date(task.due_date), "MMM d")}
                 </span>
               )}
               

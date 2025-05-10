@@ -1,85 +1,72 @@
 
 import { useState, useEffect } from "react";
-import NotificationCenter, { Notification } from "@/components/notifications/NotificationCenter";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { toast } from "@/components/ui/sonner";
-
-// Mock notifications data
-const mockNotifications: Notification[] = [
-  {
-    id: "notification-1",
-    title: "Task due today",
-    message: "Website Redesign Project is due today",
-    type: "task_due",
-    read: false,
-    date: new Date(),
-    taskId: "task-1",
-    priority: 5
-  },
-  {
-    id: "notification-2",
-    title: "Task reminder",
-    message: "Q3 Marketing Campaign starts tomorrow",
-    type: "task_reminder",
-    read: false,
-    date: new Date(Date.now() - 1000 * 60 * 60),
-    taskId: "task-2",
-    priority: 4
-  },
-  {
-    id: "notification-3",
-    title: "Task updated",
-    message: "Design new homepage layout was marked as completed",
-    type: "info",
-    read: true,
-    date: new Date(Date.now() - 1000 * 60 * 60 * 3),
-    taskId: "task-1-1"
-  },
-  {
-    id: "notification-4",
-    title: "Welcome to TaskPal",
-    message: "Get started by creating your first task",
-    type: "system",
-    read: true,
-    date: new Date(Date.now() - 1000 * 60 * 60 * 24)
-  }
-];
+import { 
+  fetchNotifications, 
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  Notification 
+} from "@/services/notificationService";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 
 interface NotificationHeaderProps {
   toggleDetailPanel: (taskId?: string) => void;
 }
 
 const NotificationHeader = ({ toggleDetailPanel }: NotificationHeaderProps) => {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const { isAuthenticated } = useSupabaseAuth();
+  const queryClient = useQueryClient();
+  
+  // Fetch notifications
+  const { data: notifications } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: fetchNotifications,
+    enabled: isAuthenticated,
+  });
+  
+  // Mark notification as read mutation
+  const markAsReadMutation = useMutation({
+    mutationFn: markNotificationAsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+  
+  // Mark all notifications as read mutation
+  const markAllReadMutation = useMutation({
+    mutationFn: markAllNotificationsAsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast.success("All notifications marked as read");
+    },
+  });
   
   // Mark notification as read
   const handleMarkAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === id
-          ? { ...notification, read: true }
-          : notification
-      )
-    );
+    markAsReadMutation.mutate(id);
   };
   
   // Mark all notifications as read
   const handleMarkAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notification => ({ ...notification, read: true }))
-    );
-    toast.success("All notifications marked as read");
+    markAllReadMutation.mutate();
   };
   
   // Handle notification click
   const handleNotificationClick = (notification: Notification) => {
-    if (notification.taskId) {
-      toggleDetailPanel(notification.taskId);
+    if (notification.task_id) {
+      toggleDetailPanel(notification.task_id);
+    }
+    
+    if (!notification.read) {
+      handleMarkAsRead(notification.id);
     }
   };
 
   return (
     <NotificationCenter
-      notifications={notifications}
+      notifications={notifications || []}
       onNotificationRead={handleMarkAsRead}
       onAllRead={handleMarkAllAsRead}
       onNotificationClick={handleNotificationClick}

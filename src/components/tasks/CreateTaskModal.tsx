@@ -11,6 +11,10 @@ import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
+import { fetchProjects } from "@/services/projectService";
+import { fetchTasks } from "@/services/taskService";
+import { useQuery } from "@tanstack/react-query";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -23,8 +27,38 @@ const CreateTaskModal = ({ isOpen, onClose, onSave }: CreateTaskModalProps) => {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [weight, setWeight] = useState(3);
-  const [project, setProject] = useState("General");
+  const [projectId, setProjectId] = useState<string | undefined>(undefined);
+  const [parentTaskId, setParentTaskId] = useState<string | undefined>(undefined);
   const [priorityScore, setPriorityScore] = useState<number | null>(null);
+  const [showSubtasks, setShowSubtasks] = useState(false);
+  const { isAuthenticated } = useSupabaseAuth();
+  
+  // Fetch projects for dropdown
+  const { data: projects } = useQuery({
+    queryKey: ['projects'],
+    queryFn: fetchProjects,
+    enabled: isAuthenticated && isOpen,
+  });
+  
+  // Fetch tasks for parent task selection
+  const { data: tasks } = useQuery({
+    queryKey: ['tasks'],
+    queryFn: fetchTasks,
+    enabled: isAuthenticated && isOpen,
+  });
+  
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setTitle("");
+      setDescription("");
+      setDueDate(undefined);
+      setWeight(3);
+      setProjectId(undefined);
+      setParentTaskId(undefined);
+      setPriorityScore(null);
+    }
+  }, [isOpen]);
   
   // Calculate priority score based on weight and days until due
   useEffect(() => {
@@ -49,31 +83,18 @@ const CreateTaskModal = ({ isOpen, onClose, onSave }: CreateTaskModalProps) => {
     if (!title.trim()) return;
     
     const newTask = {
-      id: `task-${Date.now()}`,
       title,
       description,
       dueDate: dueDate ? dueDate.toISOString().split('T')[0] : undefined,
       weight,
       priorityScore: priorityScore || weight, // Default to weight if no due date
-      project,
-      status: "Not Started",
-      parentId: null,
+      project: projectId,
+      parentId: parentTaskId,
     };
     
     onSave(newTask);
-    resetForm();
-    onClose();
   };
   
-  const resetForm = () => {
-    setTitle("");
-    setDescription("");
-    setDueDate(undefined);
-    setWeight(3);
-    setProject("General");
-    setPriorityScore(null);
-  };
-
   // Helper function to get priority class based on score
   const getPriorityClass = (score: number | null) => {
     if (score === null) return "bg-gray-200";
@@ -123,6 +144,24 @@ const CreateTaskModal = ({ isOpen, onClose, onSave }: CreateTaskModalProps) => {
             />
           </div>
           
+          {/* Parent task selection */}
+          <div className="space-y-2">
+            <label htmlFor="parentTask" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Parent Task (Optional)
+            </label>
+            <select
+              id="parentTask"
+              value={parentTaskId || ""}
+              onChange={(e) => setParentTaskId(e.target.value || undefined)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="">None (Top-level task)</option>
+              {tasks && tasks.map(task => (
+                <option key={task.id} value={task.id}>{task.title}</option>
+              ))}
+            </select>
+          </div>
+          
           {/* Due date picker */}
           <div className="space-y-2">
             <label htmlFor="dueDate" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -158,9 +197,15 @@ const CreateTaskModal = ({ isOpen, onClose, onSave }: CreateTaskModalProps) => {
           <div className="space-y-2">
             <div className="flex justify-between">
               <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Weight (1-5)
+                Priority (1-5)
               </label>
-              <span className="text-sm font-medium">{weight}</span>
+              <div className="flex items-center text-sm font-medium">
+                {weight === 5 && <span className="text-priority-urgent">Urgent</span>}
+                {weight === 4 && <span className="text-priority-veryhigh">Very High</span>}
+                {weight === 3 && <span className="text-priority-high">High</span>}
+                {weight === 2 && <span className="text-priority-medium">Medium</span>}
+                {weight === 1 && <span className="text-priority-low">Low</span>}
+              </div>
             </div>
             <Slider
               value={[weight]}
@@ -190,7 +235,7 @@ const CreateTaskModal = ({ isOpen, onClose, onSave }: CreateTaskModalProps) => {
                   {priorityScore.toFixed(1)}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Based on weight and due date
+                  Based on priority and due date
                 </div>
               </div>
             </div>
@@ -203,15 +248,14 @@ const CreateTaskModal = ({ isOpen, onClose, onSave }: CreateTaskModalProps) => {
             </label>
             <select
               id="project"
-              value={project}
-              onChange={(e) => setProject(e.target.value)}
+              value={projectId || ""}
+              onChange={(e) => setProjectId(e.target.value || undefined)}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <option value="General">General</option>
-              <option value="Website Redesign">Website Redesign</option>
-              <option value="Marketing Campaign">Marketing Campaign</option>
-              <option value="Product Launch">Product Launch</option>
-              <option value="Team Onboarding">Team Onboarding</option>
+              <option value="">No Project</option>
+              {projects && projects.map(project => (
+                <option key={project.id} value={project.id}>{project.name}</option>
+              ))}
             </select>
           </div>
         </div>

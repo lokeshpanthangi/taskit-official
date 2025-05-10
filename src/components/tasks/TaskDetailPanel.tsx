@@ -4,120 +4,122 @@ import { X, Star, Calendar, CheckCircle, Edit, Trash } from "lucide-react";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Progress } from "@/components/ui/progress";
-
-interface SubtaskType {
-  id: string;
-  title: string;
-  completed: boolean;
-}
+import { fetchSubtasks, updateSubtask, createSubtask, Subtask } from "@/services/taskService";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/components/ui/sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TaskDetailPanelProps {
   taskId: string | null;
   onClose: () => void;
 }
 
-// Mock task data
-const mockTasks = [
-  {
-    id: "task-1",
-    title: "Website Redesign Project",
-    description: "Complete overhaul of the company website with new branding, messaging, and improved user experience.",
-    status: "In Progress",
-    priority: 5,
-    dueDate: "2025-06-15",
-    project: "Website Redesign",
-    assignedTo: "Demo User",
-    subtasks: [
-      { id: "sub-1", title: "Create wireframes", completed: true },
-      { id: "sub-2", title: "Get design approval", completed: false },
-      { id: "sub-3", title: "Implement HTML/CSS", completed: false },
-      { id: "sub-4", title: "Test responsiveness", completed: false },
-    ],
-    parentId: null
-  },
-  {
-    id: "task-1-1",
-    title: "Design new homepage layout",
-    description: "Create wireframes and mockups for the new homepage based on company brand guidelines",
-    status: "Completed",
-    priority: 4,
-    dueDate: "2025-06-01",
-    project: "Website Redesign",
-    assignedTo: "Demo User",
-    subtasks: [
-      { id: "sub-5", title: "Research competitors", completed: true },
-      { id: "sub-6", title: "Create wireframe", completed: true },
-      { id: "sub-7", title: "Design mockup", completed: true },
-    ],
-    parentId: "task-1"
-  },
-  // ... add more tasks matching the structure in the Tasks.tsx component
-];
-
 const TaskDetailPanel = ({ taskId, onClose }: TaskDetailPanelProps) => {
   const [task, setTask] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [subtasks, setSubtasks] = useState<SubtaskType[]>([]);
   const [newSubtask, setNewSubtask] = useState("");
   const [childTasks, setChildTasks] = useState<any[]>([]);
-
+  const queryClient = useQueryClient();
+  
+  // Fetch subtasks with React Query
+  const { data: subtasks, isLoading: subtasksLoading } = useQuery({
+    queryKey: ['subtasks', taskId],
+    queryFn: () => fetchSubtasks(taskId!),
+    enabled: !!taskId,
+  });
+  
+  // Create subtask mutation
+  const createSubtaskMutation = useMutation({
+    mutationFn: createSubtask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] });
+      setNewSubtask("");
+      toast.success("Subtask added");
+    },
+  });
+  
+  // Update subtask mutation
+  const updateSubtaskMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string, updates: Partial<Subtask> }) => 
+      updateSubtask(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] });
+    },
+  });
+  
   useEffect(() => {
-    // In a real app, this would fetch the task data from an API
-    const fetchTask = async () => {
+    // Fetch task details
+    const fetchTaskDetails = async () => {
+      if (!taskId) {
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
+      
       try {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 300));
-        const foundTask = mockTasks.find(t => t.id === taskId);
-        setTask(foundTask || null);
+        // Fetch the task
+        const { data: taskData, error: taskError } = await supabase
+          .from("tasks")
+          .select(`
+            *,
+            projects(name)
+          `)
+          .eq("id", taskId)
+          .single();
+          
+        if (taskError) throw taskError;
         
-        if (foundTask?.subtasks) {
-          setSubtasks(foundTask.subtasks);
-        }
+        // Fetch child tasks
+        const { data: childTasksData, error: childError } = await supabase
+          .from("tasks")
+          .select("*")
+          .eq("parent_id", taskId);
+          
+        if (childError) throw childError;
         
-        // Find child tasks
-        const children = mockTasks.filter(t => t.parentId === taskId);
-        setChildTasks(children);
+        // Process task data
+        const processedTask = {
+          ...taskData,
+          project: taskData.projects?.name,
+        };
+        
+        setTask(processedTask);
+        setChildTasks(childTasksData || []);
       } catch (error) {
-        console.error("Error fetching task:", error);
+        console.error("Error fetching task details:", error);
+        toast.error("Error loading task details");
       } finally {
         setIsLoading(false);
       }
     };
-
-    if (taskId) {
-      fetchTask();
-    }
+    
+    fetchTaskDetails();
   }, [taskId]);
-
-  const handleSubtaskToggle = (subtaskId: string) => {
-    setSubtasks(prev =>
-      prev.map(subtask =>
-        subtask.id === subtaskId 
-          ? { ...subtask, completed: !subtask.completed } 
-          : subtask
-      )
-    );
+  
+  const handleSubtaskToggle = (subtaskId: string, completed: boolean) => {
+    updateSubtaskMutation.mutate({
+      id: subtaskId,
+      updates: { completed }
+    });
   };
-
+  
   const handleAddSubtask = () => {
-    if (newSubtask.trim()) {
-      const newSubtaskItem = {
-        id: `sub-${Date.now()}`,
+    if (taskId && newSubtask.trim()) {
+      createSubtaskMutation.mutate({
+        task_id: taskId,
         title: newSubtask.trim(),
         completed: false
-      };
-      setSubtasks([...subtasks, newSubtaskItem]);
-      setNewSubtask("");
+      });
     }
   };
-
+  
   const calculateProgress = () => {
-    if (!subtasks.length) return 0;
+    if (!subtasks || subtasks.length === 0) return 0;
     const completedCount = subtasks.filter(subtask => subtask.completed).length;
     return (completedCount / subtasks.length) * 100;
   };
-
+  
   if (isLoading) {
     return (
       <div className="w-96 border-l overflow-y-auto p-6 bg-background">
@@ -138,7 +140,7 @@ const TaskDetailPanel = ({ taskId, onClose }: TaskDetailPanelProps) => {
       </div>
     );
   }
-
+  
   if (!task) {
     return (
       <div className="w-96 border-l overflow-y-auto p-6 bg-background">
@@ -152,7 +154,7 @@ const TaskDetailPanel = ({ taskId, onClose }: TaskDetailPanelProps) => {
       </div>
     );
   }
-
+  
   return (
     <div className="w-96 border-l overflow-y-auto bg-background">
       <div className="p-6">
@@ -181,7 +183,7 @@ const TaskDetailPanel = ({ taskId, onClose }: TaskDetailPanelProps) => {
           {/* Description */}
           <div>
             <h3 className="text-sm font-medium text-muted-foreground mb-1">Description</h3>
-            <p className="text-sm">{task.description}</p>
+            <p className="text-sm">{task.description || "No description provided"}</p>
           </div>
           
           {/* Progress bar */}
@@ -209,16 +211,12 @@ const TaskDetailPanel = ({ taskId, onClose }: TaskDetailPanelProps) => {
               <span className="text-sm text-muted-foreground">Due Date</span>
               <span className="text-sm font-medium flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
-                {task.dueDate ? format(new Date(task.dueDate), "MMM d, yyyy") : "No date set"}
+                {task.due_date ? format(new Date(task.due_date), "MMM d, yyyy") : "No date set"}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Project</span>
-              <span className="text-sm font-medium">{task.project}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Assigned To</span>
-              <span className="text-sm font-medium">{task.assignedTo}</span>
+              <span className="text-sm font-medium">{task.project || "No project"}</span>
             </div>
           </div>
           
@@ -245,21 +243,33 @@ const TaskDetailPanel = ({ taskId, onClose }: TaskDetailPanelProps) => {
           {/* Subtasks */}
           <div>
             <h3 className="text-sm font-medium text-muted-foreground mb-2">Subtasks</h3>
-            <ul className="space-y-2">
-              {subtasks.map((subtask) => (
-                <li key={subtask.id} className="flex items-center gap-2">
-                  <input 
-                    type="checkbox" 
-                    checked={subtask.completed} 
-                    onChange={() => handleSubtaskToggle(subtask.id)}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                  />
-                  <span className={`text-sm ${subtask.completed ? "line-through text-muted-foreground" : ""}`}>
-                    {subtask.title}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            {subtasksLoading ? (
+              <div className="py-4 flex justify-center">
+                <span className="text-sm text-muted-foreground">Loading subtasks...</span>
+              </div>
+            ) : (
+              <ul className="space-y-2">
+                {subtasks && subtasks.length > 0 ? (
+                  subtasks.map((subtask) => (
+                    <li key={subtask.id} className="flex items-center gap-2">
+                      <input 
+                        type="checkbox" 
+                        checked={subtask.completed} 
+                        onChange={() => handleSubtaskToggle(subtask.id, !subtask.completed)}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <span className={`text-sm ${subtask.completed ? "line-through text-muted-foreground" : ""}`}>
+                        {subtask.title}
+                      </span>
+                    </li>
+                  ))
+                ) : (
+                  <div className="text-center py-2">
+                    <p className="text-sm text-muted-foreground">No subtasks found</p>
+                  </div>
+                )}
+              </ul>
+            )}
             
             <div className="mt-3 flex gap-2">
               <input
@@ -270,17 +280,17 @@ const TaskDetailPanel = ({ taskId, onClose }: TaskDetailPanelProps) => {
                 onKeyDown={(e) => e.key === 'Enter' && handleAddSubtask()}
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               />
-              <Button onClick={handleAddSubtask} size="sm">Add</Button>
+              <Button onClick={handleAddSubtask} size="sm" disabled={!newSubtask.trim()}>Add</Button>
             </div>
           </div>
           
           {/* Action buttons */}
           <div className="flex gap-2 pt-4">
-            <Button variant="outline" className="flex-1">
+            <Button variant="outline" className="flex-1" onClick={() => toast.info("Edit functionality coming soon")}>
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </Button>
-            <Button variant="destructive" className="flex-1">
+            <Button variant="destructive" className="flex-1" onClick={() => toast.info("Delete functionality coming soon")}>
               <Trash className="h-4 w-4 mr-2" />
               Delete
             </Button>
