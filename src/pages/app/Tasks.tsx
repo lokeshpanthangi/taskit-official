@@ -15,7 +15,8 @@ import {
   createTask, 
   updateTask,
   buildTaskHierarchy,
-  TaskStatus
+  TaskStatus,
+  Task
 } from "@/services/taskService";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTasks } from "@/hooks/useTasks";
@@ -84,7 +85,7 @@ const Tasks = () => {
   });
   
   // Apply search filter and status filter
-  const filterTasks = (allTasks: any[]) => {
+  const filterTasks = (allTasks: Task[]) => {
     if (!allTasks) return [];
     
     return allTasks.filter(task => {
