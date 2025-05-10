@@ -1,4 +1,3 @@
-
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar as SidebarContainer,
@@ -10,7 +9,6 @@ import {
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
-  SidebarMenuButton,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, CheckSquare, Calendar, Settings, FolderKanban, Plus } from "lucide-react";
@@ -18,11 +16,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
-import { fetchProjects } from "@/services/projectService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState } from "react";
 import CreateProjectModal from "@/components/projects/CreateProjectModal";
+import { useProjects } from "@/hooks/useProjects";
 
 const Sidebar = () => {
   const { user } = useAuth();
@@ -37,11 +34,10 @@ const Sidebar = () => {
     { name: "Projects", icon: <FolderKanban className="h-5 w-5" />, to: "/projects" },
   ];
 
-  // Fetch real project data
-  const { data: projects, isLoading } = useQuery({
-    queryKey: ['projects'],
-    queryFn: fetchProjects,
-  });
+  // Use the useProjects hook for proper data isolation
+  const { projects, isLoading } = useProjects();
+  
+  console.log("Sidebar - Projects count:", projects?.length || 0); // Debug log
   
   // Get recent projects (up to 3)
   const recentProjects = projects 

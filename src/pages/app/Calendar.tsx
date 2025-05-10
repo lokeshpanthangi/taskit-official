@@ -42,7 +42,7 @@ const Calendar = () => {
     }));
   };
   
-  // Add the calendarEvents variable back
+  // Add the calendarEvents variable
   const calendarEvents = mapTasksToEvents(tasks);
 
   // Handle clicking on an event

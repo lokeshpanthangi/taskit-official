@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,14 +12,13 @@ import CalendarView, { CalendarEvent } from "@/components/calendar/CalendarView"
 import { Badge } from "@/components/ui/badge";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { 
-  fetchTasks,
   createTask, 
   updateTask,
   buildTaskHierarchy,
-  Task,
   TaskStatus
 } from "@/services/taskService";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTasks } from "@/hooks/useTasks";
 
 type OutletContextType = {
   toggleDetailPanel: (taskId?: string) => void;
@@ -35,19 +33,18 @@ const Tasks = () => {
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [topUrgentTasks, setTopUrgentTasks] = useState<Task[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const { isAuthenticated, isLoading: authLoading } = useSupabaseAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useSupabaseAuth();
   const queryClient = useQueryClient();
   
   // Task drag-and-drop state
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   
-  // Fetch tasks with React Query
-  const { data: tasks, isLoading: tasksLoading } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: fetchTasks,
-    enabled: isAuthenticated,
-  });
+  // Fetch tasks with useTasks hook
+  const { tasks, isLoading: tasksLoading } = useTasks();
   
+  console.log("Tasks page - Current user ID:", user?.id); // Debug log
+  console.log("Tasks page - Tasks count:", tasks?.length || 0); // Debug log
+
   // Create task mutation
   const createTaskMutation = useMutation({
     mutationFn: createTask,
@@ -87,7 +84,7 @@ const Tasks = () => {
   });
   
   // Apply search filter and status filter
-  const filterTasks = (allTasks: Task[]) => {
+  const filterTasks = (allTasks: any[]) => {
     if (!allTasks) return [];
     
     return allTasks.filter(task => {
