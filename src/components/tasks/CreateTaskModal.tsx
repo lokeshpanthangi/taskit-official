@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -13,6 +12,8 @@ import { CalendarIcon } from "lucide-react";
 import { TaskStatus } from "@/services/taskService";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { toast } from "@/components/ui/sonner";
+import { useQuery } from "@tanstack/react-query";
+import { fetchTasks } from "@/services/taskService";
 
 interface CreateTaskModalProps {
   isOpen?: boolean;
@@ -36,6 +37,14 @@ const CreateTaskModal = ({
   const [weight, setWeight] = useState<number>(3); // Default weight is 3 (medium)
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [parentId, setParentId] = useState<string | null>(null);
+  
+  // Fetch all tasks for the dropdown
+  const { data: tasks, isLoading: tasksLoading } = useQuery({
+    queryKey: ["tasks", user?.id],
+    queryFn: fetchTasks,
+    enabled: !!user?.id,
+  });
   
   useEffect(() => {
     if (isOpen) {
@@ -44,6 +53,7 @@ const CreateTaskModal = ({
       setDescription("");
       setDueDate(defaultDate || undefined);
       setWeight(3);
+      setParentId(null);
     }
   }, [isOpen, defaultDate]);
   
@@ -59,7 +69,8 @@ const CreateTaskModal = ({
         due_date: dueDate ? dueDate.toISOString() : null,
         priority: weight, // Changed from weight to priority to match the Task type
         user_id: user?.id,
-        status: "Not Started" as TaskStatus // Using proper TaskStatus type
+        status: "Not Started" as TaskStatus, // Using proper TaskStatus type
+        parent_id: parentId || null,
       };
       
       if (onSave) {
@@ -177,6 +188,27 @@ const CreateTaskModal = ({
               {weight === 4 && "High"}
               {weight === 5 && "Very High"}
             </div>
+          </div>
+          
+          {/* Parent Dropdown */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="parent" className="text-right">
+              Parent
+            </Label>
+            <select
+              id="parent"
+              className="col-span-3 h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+              value={parentId || ""}
+              onChange={e => setParentId(e.target.value || null)}
+              disabled={tasksLoading}
+            >
+              <option value="">None</option>
+              {tasks && tasks.length > 0 && tasks.map(task => (
+                <option key={task.id} value={task.id}>
+                  {task.title}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
         <DialogFooter>

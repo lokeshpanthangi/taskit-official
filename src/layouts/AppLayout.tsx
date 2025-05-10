@@ -1,11 +1,9 @@
-
 import { Outlet } from "react-router-dom";
 import { useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import TaskDetailPanel from "@/components/tasks/TaskDetailPanel";
-import NotificationHeader from "@/components/layout/NotificationHeader";
 
 const AppLayout = () => {
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
@@ -38,9 +36,6 @@ const AppLayout = () => {
           {/* Top header */}
           <div className="flex items-center justify-between p-4 border-b border-border/40">
             <Header />
-            <div className="flex items-center gap-2">
-              <NotificationHeader toggleDetailPanel={toggleDetailPanel} />
-            </div>
           </div>
           
           {/* Content with optional right panel */}

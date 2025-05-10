@@ -57,20 +57,17 @@ const Sidebar = () => {
           <h1 className="text-xl font-semibold">TaskPal</h1>
         </div>
       </SidebarHeader>
+      <div className="flex flex-col items-center py-2">
+        <span className="text-base font-medium">
+          {user && (user.first_name || user.last_name)
+            ? `Welcome, ${[user.first_name, user.last_name].filter(Boolean).join(' ')}!`
+            : 'Welcome!'}
+        </span>
+      </div>
       
       <SidebarContent className="px-2">
         <SidebarGroup>
           <SidebarGroupContent>
-            <div className="flex justify-center py-2">
-              <Button 
-                size="sm" 
-                className="w-full animate-fade-in hover:scale-105 transition-transform"
-                onClick={() => window.location.href = "/tasks"}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                New Task
-              </Button>
-            </div>
           </SidebarGroupContent>
         </SidebarGroup>
 
