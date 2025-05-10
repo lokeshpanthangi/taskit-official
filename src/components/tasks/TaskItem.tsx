@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Star, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { format, isAfter, isBefore, isToday } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TaskItemProps {
   task: any;
@@ -11,7 +12,7 @@ interface TaskItemProps {
   level?: number;
   onSelect: (taskId: string) => void;
   onStatusChange: (taskId: string, status: string) => void;
-  isHighPriority?: boolean; // Added this property to fix the TypeScript error
+  isHighPriority?: boolean;
 }
 
 const TaskItem = ({ 
@@ -20,7 +21,7 @@ const TaskItem = ({
   level = 0, 
   onSelect, 
   onStatusChange,
-  isHighPriority = false // Default value of false
+  isHighPriority = false
 }: TaskItemProps) => {
   const [expanded, setExpanded] = useState(true);
   const hasChildren = Array.isArray(children) && children.length > 0;
@@ -57,7 +58,7 @@ const TaskItem = ({
         className={cn(
           "task-container flex items-start gap-3 hover:bg-accent/5",
           isCompleted && "opacity-60",
-          isHighPriority && "border-l-4 border-l-priority-high" // Added styling for high priority tasks
+          isHighPriority && "border-l-4 border-l-priority-high"
         )}
         style={{ marginLeft: `${level * 1.5}rem` }}
         onClick={() => onSelect(task.id)}
@@ -94,13 +95,24 @@ const TaskItem = ({
               </span>
               
               <div className="flex">
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <Star
-                    key={value}
-                    size={14}
-                    className={value <= task.priority ? "text-priority-high fill-priority-high" : "text-muted"}
-                  />
-                ))}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex">
+                        {[1, 2, 3, 4, 5].map((value) => (
+                          <Star
+                            key={value}
+                            size={14}
+                            className={value <= task.priority ? "text-priority-high fill-priority-high" : "text-muted"}
+                          />
+                        ))}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Priority: {task.priority}/5</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               
               {task.dueDate && (
