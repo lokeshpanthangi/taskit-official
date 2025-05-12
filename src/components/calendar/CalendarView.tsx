@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -27,6 +26,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, onEventClick, onDat
   const [tooltipContent, setTooltipContent] = useState<CalendarEvent[]>([]);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [hoveredDateIndex, setHoveredDateIndex] = useState<number | null>(null);
 
   const handlePreviousMonth = () => {
     setCurrentMonth(prev => addMonths(prev, -1));
@@ -57,24 +57,27 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, onEventClick, onDat
   });
 
   // Custom day renderer for calendar
-  const renderDay = (date: Date) => {
+  const renderDay = (date: Date, index: number) => {
     const eventsForDate = getEventsForDate(date);
     const hasEvents = eventsForDate.length > 0;
     const isCurrentMonth = isSameMonth(date, currentMonth);
     const isSelectedDay = selectedDate ? isSameDay(date, selectedDate) : false;
     const isTodayDate = isToday(date);
+    const isHovered = hoveredDateIndex === index;
 
     return (
       <div 
         className={`
-          relative w-full h-14 p-1
+          relative w-full transition-all duration-300 overflow-hidden
           ${isCurrentMonth ? '' : 'opacity-40'}
           ${isSelectedDay ? 'bg-primary/20' : ''}
           ${isTodayDate ? 'font-bold' : ''}
+          ${isHovered ? 'h-auto max-h-40' : 'h-16'} 
           hover:bg-muted/40 cursor-pointer
         `}
         onClick={() => handleDateClick(date)}
         onMouseEnter={(e) => {
+          setHoveredDateIndex(index);
           if (hasEvents) {
             setTooltipContent(eventsForDate);
             setTooltipPosition({ 
@@ -84,14 +87,17 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, onEventClick, onDat
             setIsTooltipVisible(true);
           }
         }}
-        onMouseLeave={() => setIsTooltipVisible(false)}
+        onMouseLeave={() => {
+          setHoveredDateIndex(null);
+          setIsTooltipVisible(false);
+        }}
       >
         <div className="absolute top-1 left-2 text-xs">
           {date.getDate()}
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-0.5 overflow-hidden max-h-6">
-          {eventsForDate.slice(0, 2).map((event, index) => (
+        <div className={`mt-5 flex flex-col gap-1 overflow-y-auto calendar-day ${isHovered ? 'max-h-32' : 'max-h-6'}`}>
+          {eventsForDate.map((event, idx) => (
             <div
               key={event.id}
               onClick={(e) => {
@@ -99,23 +105,17 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, onEventClick, onDat
                 onEventClick(event.id);
               }}
               className={`
-                text-xs px-1 truncate w-full
+                text-xs px-1 py-0.5 truncate w-full
                 ${event.status === 'Completed' ? 'bg-green-500/20' : 
                   event.priority >= 4 ? 'bg-red-500/20' : 
                   event.priority === 3 ? 'bg-yellow-500/20' : 'bg-blue-500/20'}
                 ${event.status === 'Completed' ? 'line-through' : ''}
-                rounded
+                rounded transition-all animate-fade-in
               `}
             >
               {event.title}
             </div>
           ))}
-          
-          {eventsForDate.length > 2 && (
-            <div className="text-xs text-muted-foreground w-full text-center">
-              +{eventsForDate.length - 2} more
-            </div>
-          )}
         </div>
       </div>
     );
@@ -150,7 +150,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, onEventClick, onDat
               key={i} 
               className="border border-border/20"
             >
-              {renderDay(day)}
+              {renderDay(day, i)}
             </div>
           ))}
         </div>
@@ -159,7 +159,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, onEventClick, onDat
       {/* Tooltip for events */}
       {isTooltipVisible && tooltipContent.length > 0 && (
         <div 
-          className="absolute z-50 bg-popover text-popover-foreground p-3 rounded-md shadow-lg min-w-56 max-w-80"
+          className="absolute z-50 bg-popover text-popover-foreground p-3 rounded-md shadow-lg min-w-56 max-w-80 animate-fade-in"
           style={{
             left: `${tooltipPosition.x}px`,
             top: `${tooltipPosition.y}px`,
@@ -172,7 +172,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, onEventClick, onDat
             {tooltipContent.map(event => (
               <Card 
                 key={event.id} 
-                className="p-2 cursor-pointer hover:bg-accent/50"
+                className="p-2 cursor-pointer hover:bg-accent/50 animate-scale-in"
                 onClick={() => onEventClick(event.id)}
               >
                 <div className="flex items-start justify-between gap-2">

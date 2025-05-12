@@ -41,6 +41,7 @@ const Dashboard = () => {
   const [topUrgentTasks, setTopUrgentTasks] = useState<Task[]>([]);
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [draggedPriorityIndex, setDraggedPriorityIndex] = useState<number | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
   // Fetch tasks with React Query
   const { data: tasks, isLoading: tasksLoading } = useQuery({
@@ -78,23 +79,55 @@ const Dashboard = () => {
     projectProgress: 0,
     recentActivity: [],
   });
+
+  // Extract all available tags from tasks
+  const allTags = React.useMemo(() => {
+    if (!tasks) return [];
+    const tagSet = new Set<string>();
+    
+    tasks.forEach(task => {
+      if (task.tags && Array.isArray(task.tags)) {
+        task.tags.forEach(tag => tag && tagSet.add(tag));
+      }
+    });
+    
+    return Array.from(tagSet);
+  }, [tasks]);
+  
+  // Handle tag selection
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag) 
+        : [...prev, tag]
+    );
+  };
   
   useEffect(() => {
     if (tasks && tasks.length > 0) {
+      // Filter tasks based on selected tags if any
+      const filteredTasks = selectedTags.length > 0
+        ? tasks.filter(task => 
+            task.tags && 
+            Array.isArray(task.tags) && 
+            selectedTags.some(tag => task.tags?.includes(tag))
+          )
+        : tasks;
+      
       // Count completed and total tasks
-      const completedTasks = tasks.filter(task => task.status === "Completed").length;
-      const totalTasks = tasks.length;
+      const completedTasks = filteredTasks.filter(task => task.status === "Completed").length;
+      const totalTasks = filteredTasks.length;
       
       // Count upcoming and overdue deadlines
       const today = new Date();
-      const upcomingDeadlines = tasks.filter(task => {
+      const upcomingDeadlines = filteredTasks.filter(task => {
         if (!task.due_date || task.status === "Completed") return false;
         const dueDate = new Date(task.due_date);
         const diff = differenceInDays(dueDate, today);
         return diff >= 0 && diff <= 7;
       }).length;
       
-      const overdueDeadlines = tasks.filter(task => {
+      const overdueDeadlines = filteredTasks.filter(task => {
         if (!task.due_date || task.status === "Completed") return false;
         const dueDate = new Date(task.due_date);
         return differenceInDays(dueDate, today) < 0;
@@ -113,7 +146,7 @@ const Dashboard = () => {
       }
       
       // Recent activity based on task updates
-      const recentActivity = tasks
+      const recentActivity = filteredTasks
         .sort((a, b) => new Date(b.updated_at || "").getTime() - new Date(a.updated_at || "").getTime())
         .slice(0, 4)
         .map(task => ({
@@ -133,12 +166,12 @@ const Dashboard = () => {
       });
       
       // Sort tasks by priority score and get top 5 for Top Priority Tasks section
-      const sortedByPriority = [...tasks].sort((a, b) => 
+      const sortedByPriority = [...filteredTasks].sort((a, b) => 
         (b.priorityScore || 0) - (a.priorityScore || 0)
       );
       setTopUrgentTasks(sortedByPriority.slice(0, 5));
     }
-  }, [tasks, projects]);
+  }, [tasks, projects, selectedTags]);
   
   const formatTimeAgo = (date: Date) => {
     const now = new Date();
@@ -159,7 +192,7 @@ const Dashboard = () => {
       if (action === "Add Task") {
         toggleDetailPanel();
         
-        // Create notification for demo - fix the type issue
+        // Create notification for demo
         await createNotification({
           title: "Quick task created",
           message: "You've created a task from the dashboard",
@@ -258,6 +291,25 @@ const Dashboard = () => {
           </Button>
         </div>
       </div>
+
+      {/* Tags filter */}
+      {allTags.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {allTags.map(tag => (
+            <Badge
+              key={tag}
+              variant={selectedTags.includes(tag) ? "default" : "outline"}
+              className={`cursor-pointer transition-all hover:scale-105 ${
+                selectedTags.includes(tag) ? 'animate-pop' : ''
+              }`}
+              onClick={() => toggleTag(tag)}
+            >
+              {tag}
+              {selectedTags.includes(tag) && <span className="ml-1">✓</span>}
+            </Badge>
+          ))}
+        </div>
+      )}
       
       {/* Stats Overview */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -352,7 +404,7 @@ const Dashboard = () => {
                     </div>
                     <div className="flex items-center space-x-3">
                       <div className="text-sm text-muted-foreground">
-                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : "No due date"}
+                        {task.due_date ? format(new Date(task.due_date), 'MMM d') : "No due date"}
                       </div>
                     </div>
                   </div>

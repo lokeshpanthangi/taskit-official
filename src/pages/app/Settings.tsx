@@ -8,21 +8,104 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "@/components/ui/sonner";
+import { useTheme } from "next-themes";
 
 const Settings = () => {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
+  const { theme, setTheme } = useTheme();
   
   // Profile form state
   const [name, setName] = useState(user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : "");
   const [email, setEmail] = useState(user?.email || "");
+  const [bio, setBio] = useState("");
   
-  // Mock save function with delay
-  const handleSave = () => {
+  // Notification settings state
+  const [notifyTaskDue, setNotifyTaskDue] = useState(true);
+  const [notifyTaskAssigned, setNotifyTaskAssigned] = useState(true);
+  const [notifyTaskComment, setNotifyTaskComment] = useState(false);
+  const [notifyProjectUpdate, setNotifyProjectUpdate] = useState(true);
+  const [notifyProjectMember, setNotifyProjectMember] = useState(false);
+  const [emailFrequency, setEmailFrequency] = useState("daily");
+  
+  // Appearance settings state
+  const [compactMode, setCompactMode] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState<string>(theme || "system");
+  
+  // Security settings state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [autoLogout, setAutoLogout] = useState(true);
+  const [inactivityTimeout, setInactivityTimeout] = useState("60");
+  
+  // Save functions for each section
+  const handleSaveProfile = () => {
     setSaving(true);
     setTimeout(() => {
       setSaving(false);
+      toast.success("Profile updated successfully");
     }, 1000);
+  };
+  
+  const handleSaveNotifications = () => {
+    setSaving(true);
+    setTimeout(() => {
+      setSaving(false);
+      toast.success("Notification preferences saved");
+    }, 1000);
+  };
+  
+  const handleSaveAppearance = () => {
+    setSaving(true);
+    // Actually change the theme
+    if (selectedTheme !== theme) {
+      setTheme(selectedTheme);
+    }
+    
+    setTimeout(() => {
+      setSaving(false);
+      toast.success("Appearance settings updated");
+    }, 1000);
+  };
+  
+  const handleSaveSecurity = () => {
+    setSaving(true);
+    setTimeout(() => {
+      setSaving(false);
+      toast.success("Security settings updated");
+    }, 1000);
+  };
+  
+  const handleUpdatePassword = () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error("Please fill in all password fields");
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+    
+    setSaving(true);
+    setTimeout(() => {
+      setSaving(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      toast.success("Password updated successfully");
+    }, 1500);
+  };
+  
+  const handleDeleteAccount = () => {
+    toast.error("This action is not available in the demo");
+  };
+  
+  const handleSelectTheme = (themeType: string) => {
+    setSelectedTheme(themeType);
   };
   
   return (
@@ -34,10 +117,10 @@ const Settings = () => {
       
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="mb-6">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="profile" className="animate-pop">Profile</TabsTrigger>
+          <TabsTrigger value="notifications" className="animate-pop [animation-delay:50ms]">Notifications</TabsTrigger>
+          <TabsTrigger value="appearance" className="animate-pop [animation-delay:100ms]">Appearance</TabsTrigger>
+          <TabsTrigger value="security" className="animate-pop [animation-delay:150ms]">Security</TabsTrigger>
         </TabsList>
         
         {/* Profile Tab */}
@@ -62,8 +145,8 @@ const Settings = () => {
                   <div className="space-y-2">
                     <h3 className="font-medium">Profile Photo</h3>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">Change</Button>
-                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                      <Button variant="outline" size="sm" onClick={() => toast.info("Image upload feature coming soon")}>Change</Button>
+                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => toast.info("Avatar removed")}>
                         Remove
                       </Button>
                     </div>
@@ -98,6 +181,8 @@ const Settings = () => {
                       id="bio"
                       className="w-full min-h-24 p-2 border rounded-md resize-y"
                       placeholder="Write a short bio about yourself"
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
                     ></textarea>
                     <p className="text-xs text-muted-foreground">
                       Brief description for your profile. URLs are hyperlinked.
@@ -106,7 +191,7 @@ const Settings = () => {
                 </div>
               </CardContent>
               <CardFooter className="border-t px-6 py-4">
-                <Button onClick={handleSave} disabled={saving}>
+                <Button onClick={handleSaveProfile} disabled={saving}>
                   {saving ? "Saving..." : "Save changes"}
                 </Button>
               </CardFooter>
@@ -135,7 +220,11 @@ const Settings = () => {
                         Receive notifications when tasks are approaching their due date
                       </p>
                     </div>
-                    <Switch id="notify-task-due" defaultChecked />
+                    <Switch 
+                      id="notify-task-due" 
+                      checked={notifyTaskDue} 
+                      onCheckedChange={setNotifyTaskDue} 
+                    />
                   </div>
                 </div>
                 
@@ -147,7 +236,11 @@ const Settings = () => {
                         Receive notifications when tasks are assigned to you
                       </p>
                     </div>
-                    <Switch id="notify-task-assigned" defaultChecked />
+                    <Switch 
+                      id="notify-task-assigned" 
+                      checked={notifyTaskAssigned} 
+                      onCheckedChange={setNotifyTaskAssigned}
+                    />
                   </div>
                 </div>
                 
@@ -159,7 +252,11 @@ const Settings = () => {
                         Receive notifications when someone comments on your tasks
                       </p>
                     </div>
-                    <Switch id="notify-task-comment" />
+                    <Switch 
+                      id="notify-task-comment"
+                      checked={notifyTaskComment}
+                      onCheckedChange={setNotifyTaskComment}
+                    />
                   </div>
                 </div>
               </div>
@@ -175,7 +272,11 @@ const Settings = () => {
                         Receive notifications about project progress and milestones
                       </p>
                     </div>
-                    <Switch id="notify-project-update" defaultChecked />
+                    <Switch 
+                      id="notify-project-update"
+                      checked={notifyProjectUpdate}
+                      onCheckedChange={setNotifyProjectUpdate}
+                    />
                   </div>
                 </div>
                 
@@ -187,7 +288,11 @@ const Settings = () => {
                         Receive notifications when team members join or leave a project
                       </p>
                     </div>
-                    <Switch id="notify-project-member" />
+                    <Switch 
+                      id="notify-project-member"
+                      checked={notifyProjectMember}
+                      onCheckedChange={setNotifyProjectMember}
+                    />
                   </div>
                 </div>
               </div>
@@ -203,8 +308,9 @@ const Settings = () => {
                         type="radio" 
                         id="email-daily" 
                         name="email-frequency" 
-                        className="h-4 w-4 border-gray-300 text-primary focus:ring-primary" 
-                        defaultChecked
+                        className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
+                        checked={emailFrequency === "daily"}
+                        onChange={() => setEmailFrequency("daily")}
                       />
                       <label htmlFor="email-daily" className="text-sm">Send a daily summary</label>
                     </div>
@@ -216,8 +322,10 @@ const Settings = () => {
                       <input 
                         type="radio" 
                         id="email-instant" 
-                        name="email-frequency" 
-                        className="h-4 w-4 border-gray-300 text-primary focus:ring-primary" 
+                        name="email-frequency"
+                        className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
+                        checked={emailFrequency === "instant"}
+                        onChange={() => setEmailFrequency("instant")}
                       />
                       <label htmlFor="email-instant" className="text-sm">Send emails immediately</label>
                     </div>
@@ -226,7 +334,7 @@ const Settings = () => {
               </div>
             </CardContent>
             <CardFooter className="border-t px-6 py-4">
-              <Button onClick={handleSave} disabled={saving}>
+              <Button onClick={handleSaveNotifications} disabled={saving}>
                 {saving ? "Saving..." : "Save changes"}
               </Button>
             </CardFooter>
@@ -248,21 +356,30 @@ const Settings = () => {
                 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                   <div className="space-y-2">
-                    <div className="border rounded-lg p-2 hover:border-primary cursor-pointer">
+                    <div 
+                      className={`border rounded-lg p-2 cursor-pointer ${selectedTheme === 'light' ? 'border-primary ring-2 ring-primary/20' : 'hover:border-primary'}`}
+                      onClick={() => handleSelectTheme('light')}
+                    >
                       <div className="h-20 bg-white rounded-md border"></div>
                       <p className="mt-2 text-center text-sm">Light</p>
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <div className="border rounded-lg p-2 hover:border-primary cursor-pointer">
+                    <div 
+                      className={`border rounded-lg p-2 cursor-pointer ${selectedTheme === 'dark' ? 'border-primary ring-2 ring-primary/20' : 'hover:border-primary'}`}
+                      onClick={() => handleSelectTheme('dark')}
+                    >
                       <div className="h-20 bg-slate-900 rounded-md border border-gray-700"></div>
                       <p className="mt-2 text-center text-sm">Dark</p>
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <div className="border rounded-lg p-2 hover:border-primary cursor-pointer">
+                    <div 
+                      className={`border rounded-lg p-2 cursor-pointer ${selectedTheme === 'system' ? 'border-primary ring-2 ring-primary/20' : 'hover:border-primary'}`}
+                      onClick={() => handleSelectTheme('system')}
+                    >
                       <div className="h-20 bg-gradient-to-b from-white to-slate-900 rounded-md border"></div>
                       <p className="mt-2 text-center text-sm">System</p>
                     </div>
@@ -281,7 +398,11 @@ const Settings = () => {
                         Display more content with less spacing
                       </p>
                     </div>
-                    <Switch id="compact-mode" />
+                    <Switch 
+                      id="compact-mode"
+                      checked={compactMode}
+                      onCheckedChange={setCompactMode}
+                    />
                   </div>
                 </div>
                 
@@ -293,13 +414,17 @@ const Settings = () => {
                         Decrease the amount of animation effects
                       </p>
                     </div>
-                    <Switch id="reduce-motion" />
+                    <Switch 
+                      id="reduce-motion"
+                      checked={reduceMotion}
+                      onCheckedChange={setReduceMotion}
+                    />
                   </div>
                 </div>
               </div>
             </CardContent>
             <CardFooter className="border-t px-6 py-4">
-              <Button onClick={handleSave} disabled={saving}>
+              <Button onClick={handleSaveAppearance} disabled={saving}>
                 {saving ? "Saving..." : "Save changes"}
               </Button>
             </CardFooter>
@@ -322,20 +447,35 @@ const Settings = () => {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="current-password">Current Password</Label>
-                    <Input id="current-password" type="password" />
+                    <Input 
+                      id="current-password" 
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                    />
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="new-password">New Password</Label>
-                    <Input id="new-password" type="password" />
+                    <Input 
+                      id="new-password" 
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="confirm-password">Confirm New Password</Label>
-                    <Input id="confirm-password" type="password" />
+                    <Input 
+                      id="confirm-password" 
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
                   </div>
                   
-                  <Button>Update Password</Button>
+                  <Button onClick={handleUpdatePassword}>Update Password</Button>
                 </div>
               </div>
               
@@ -350,16 +490,24 @@ const Settings = () => {
                         Automatically log out after a period of inactivity
                       </p>
                     </div>
-                    <Switch id="auto-logout" defaultChecked />
+                    <Switch 
+                      id="auto-logout"
+                      checked={autoLogout}
+                      onCheckedChange={setAutoLogout} 
+                    />
                   </div>
                 </div>
                 
                 <div className="space-y-2">
                   <Label>Inactivity timeout</Label>
-                  <select className="w-full p-2 border rounded-md">
+                  <select 
+                    className="w-full p-2 border rounded-md"
+                    value={inactivityTimeout}
+                    onChange={(e) => setInactivityTimeout(e.target.value)}
+                  >
                     <option value="15">15 minutes</option>
                     <option value="30">30 minutes</option>
-                    <option value="60" selected>1 hour</option>
+                    <option value="60">1 hour</option>
                     <option value="120">2 hours</option>
                     <option value="240">4 hours</option>
                   </select>
@@ -374,7 +522,7 @@ const Settings = () => {
                     Last login: Today at 10:45 AM from 192.168.1.1
                   </p>
                   
-                  <Button variant="outline" className="mt-4 text-sm">
+                  <Button variant="outline" className="mt-4 text-sm" onClick={() => toast.info("Login history feature coming soon")}>
                     View login history
                   </Button>
                 </div>
@@ -382,11 +530,11 @@ const Settings = () => {
             </CardContent>
             <CardFooter className="border-t px-6 py-4 flex justify-between">
               <div>
-                <Button variant="destructive">
+                <Button variant="destructive" onClick={handleDeleteAccount}>
                   Delete Account
                 </Button>
               </div>
-              <Button onClick={handleSave} disabled={saving}>
+              <Button onClick={handleSaveSecurity} disabled={saving}>
                 {saving ? "Saving..." : "Save changes"}
               </Button>
             </CardFooter>

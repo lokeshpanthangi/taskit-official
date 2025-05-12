@@ -28,9 +28,6 @@ const Calendar = () => {
   // Use the useTasks hook instead of direct query
   const { tasks, isLoading } = useTasks();
   
-  console.log("Calendar: Current user ID:", user?.id); // Debug log
-  console.log("Calendar: Tasks count:", tasks?.length); // Debug log
-
   // Create task mutation
   const createTaskMutation = useMutation({
     mutationFn: createTask,
@@ -113,7 +110,7 @@ const Calendar = () => {
       </div>
       
       {isLoading ? (
-        <Card className="h-96 bg-card/60 backdrop-blur-sm border-primary/10">
+        <Card className="h-[calc(100vh-200px)] bg-card/60 backdrop-blur-sm border-primary/10">
           <CardContent className="flex items-center justify-center h-full">
             <div className="animate-pulse flex flex-col items-center">
               <div className="h-12 w-12 rounded-full bg-primary/20 mb-4"></div>
@@ -122,7 +119,7 @@ const Calendar = () => {
           </CardContent>
         </Card>
       ) : calendarEvents.length === 0 ? (
-        <Card className="h-96 bg-card/60 backdrop-blur-sm border-primary/10">
+        <Card className="h-[calc(100vh-200px)] bg-card/60 backdrop-blur-sm border-primary/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5 text-muted-foreground" />
@@ -140,7 +137,7 @@ const Calendar = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="w-full h-[calc(100vh-20rem)] min-h-[650px] overflow-hidden rounded-xl shadow-sm border border-border/50">
+        <div className="w-full h-[calc(100vh-180px)] min-h-[700px] overflow-hidden rounded-xl shadow-sm border border-border/50">
           <CalendarView 
             events={calendarEvents} 
             onEventClick={handleEventClick} 

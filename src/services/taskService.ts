@@ -18,6 +18,7 @@ export interface Task {
   children?: Task[];
   priorityScore?: number;
   project?: string;
+  tags?: string[];
 }
 
 export interface Subtask {
@@ -39,7 +40,7 @@ export const fetchTasks = async () => {
     .from("tasks")
     .select(`
       *,
-      projects(name)
+      projects(id, name)
     `)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
