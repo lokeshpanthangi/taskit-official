@@ -167,3 +167,23 @@
   background-color: hsl(var(--accent)) !important;
   color: hsl(var(--accent-foreground)) !important;
 }
+
+/* Fixed calendar event overflow */
+.calendar-day {
+  max-height: 100px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.calendar-day::-webkit-scrollbar {
+  width: 4px;
+}
+
+.calendar-day::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.calendar-day::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 20px;
+}

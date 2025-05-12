@@ -362,11 +362,6 @@ const Tasks = () => {
                       <div className="text-sm text-muted-foreground">
                         {task.due_date ? new Date(task.due_date).toLocaleDateString() : "No due date"}
                       </div>
-                      {task.priorityScore !== undefined && (
-                        <Badge variant="outline" className="ml-2 bg-primary/10">
-                          Score: {task.priorityScore?.toFixed(1)}
-                        </Badge>
-                      )}
                     </div>
                   </div>
                 ))

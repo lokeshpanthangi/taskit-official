@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { Moon, Sun, Menu } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTheme } from "next-themes";
 
 const Header = () => {
   const { user: authUser, logout } = useAuth();
@@ -26,6 +27,7 @@ const Header = () => {
   const [profile, setProfile] = useState<any>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { theme, setTheme } = useTheme();
 
   // Fetch user profile
   useEffect(() => {
@@ -73,6 +75,21 @@ const Header = () => {
 
         {/* User actions moved to the right end */}
         <div className="flex items-center gap-2">
+          {isAuthenticated && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
+            </Button>
+          )}
+          
           {isAuthenticated ? (
             <>
               <NotificationHeader 
