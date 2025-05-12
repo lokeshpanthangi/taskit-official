@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -254,7 +253,44 @@ const Dashboard = () => {
       </div>
       
       <div className="grid gap-6 md:grid-cols-2">
-        {/* SWAPPED ORDER: Top Priority Tasks now comes before Recent Activity */}
+        {/* Recent Activity */}
+        <Card className="gradient-border animate-fade-in">
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Your latest task updates</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {stats.recentActivity.length > 0 ? (
+                stats.recentActivity.map((activity, index) => (
+                  <div 
+                    key={activity.id} 
+                    className={`flex items-center justify-between p-2 rounded-md hover:bg-accent/5 cursor-pointer
+                      ${index === 0 ? 'animate-pop [animation-delay:100ms]' : ''}
+                      ${index === 1 ? 'animate-pop [animation-delay:200ms]' : ''}
+                      ${index === 2 ? 'animate-pop [animation-delay:300ms]' : ''}
+                      ${index === 3 ? 'animate-pop [animation-delay:400ms]' : ''}
+                    `}
+                    onClick={() => toggleDetailPanel(activity.id)}
+                  >
+                    <div>
+                      <p className="text-sm font-medium">{activity.action}: <span className="text-primary">{activity.item}</span></p>
+                      <p className="text-xs text-muted-foreground">{activity.time}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" className="hover:bg-accent/10">
+                      View
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  No recent activity found
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Quick Links */}
         <Card className="gradient-border animate-fade-in">
           <CardHeader>
@@ -307,44 +343,6 @@ const Dashboard = () => {
                   </>
                 )}
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Activity */}
-        <Card className="gradient-border animate-fade-in">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Your latest task updates</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {stats.recentActivity.length > 0 ? (
-                stats.recentActivity.map((activity, index) => (
-                  <div 
-                    key={activity.id} 
-                    className={`flex items-center justify-between p-2 rounded-md hover:bg-accent/5 cursor-pointer
-                      ${index === 0 ? 'animate-pop [animation-delay:100ms]' : ''}
-                      ${index === 1 ? 'animate-pop [animation-delay:200ms]' : ''}
-                      ${index === 2 ? 'animate-pop [animation-delay:300ms]' : ''}
-                      ${index === 3 ? 'animate-pop [animation-delay:400ms]' : ''}
-                    `}
-                    onClick={() => toggleDetailPanel(activity.id)}
-                  >
-                    <div>
-                      <p className="text-sm font-medium">{activity.action}: <span className="text-primary">{activity.item}</span></p>
-                      <p className="text-xs text-muted-foreground">{activity.time}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" className="hover:bg-accent/10">
-                      View
-                    </Button>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-6 text-muted-foreground">
-                  No recent activity found
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>

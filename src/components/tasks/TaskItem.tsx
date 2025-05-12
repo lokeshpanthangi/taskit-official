@@ -1,258 +1,146 @@
 
-import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { Star, ChevronRight, ChevronDown, Check, GripVertical } from "lucide-react";
-import { format, isAfter, isBefore, isToday } from "date-fns";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Task, TaskStatus, removeTaskFromParent } from "@/services/taskService";
+import React from 'react';
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "@/components/ui/sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ChevronDown, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import { Task, TaskStatus } from "@/services/taskService";
 
 interface TaskItemProps {
   task: Task;
-  children?: React.ReactNode;
-  level?: number;
-  onSelect: (taskId: string) => void;
-  onStatusChange: (taskId: string, status: TaskStatus) => void;
+  level: number;
+  onSelect: (id: string) => void;
+  onStatusChange: (id: string, status: TaskStatus) => void;
+  onPriorityChange?: (id: string, priority: number) => void;
   isHighPriority?: boolean;
-  onPriorityChange?: (taskId: string, priority: number) => void;
+  children?: React.ReactNode;
+  selected?: boolean;
   onDragStart?: (e: React.DragEvent, taskId: string) => void;
   onDragOver?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent, taskId: string) => void;
-  selected?: boolean;
+  showPriorityScore?: boolean;
 }
 
-const TaskItem = ({ 
-  task, 
-  children, 
-  level = 0, 
-  onSelect, 
+const TaskItem: React.FC<TaskItemProps> = ({
+  task,
+  level,
+  onSelect,
   onStatusChange,
-  isHighPriority = false,
   onPriorityChange,
+  isHighPriority,
+  children,
+  selected,
   onDragStart,
   onDragOver,
   onDrop,
-  selected = false
-}: TaskItemProps) => {
-  const [expanded, setExpanded] = useState(true);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const hasChildren = Array.isArray(children) && children.length > 0;
-  const queryClient = useQueryClient();
+  showPriorityScore = false,
+}) => {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const hasChildren = React.Children.count(children) > 0;
   
-  // Remove from parent mutation
-  const removeParentMutation = useMutation({
-    mutationFn: removeTaskFromParent,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success("Removed from parent task");
-    }
-  });
-  
-  // Calculate due date status
-  const getDueDateStatus = () => {
-    if (!task.due_date) return "none";
-    const today = new Date();
-    const dueDate = new Date(task.due_date);
-    
-    if (isToday(dueDate)) return "today";
-    if (isBefore(dueDate, today)) return "overdue";
-    if (isAfter(dueDate, today) && isBefore(dueDate, new Date(today.setDate(today.getDate() + 3)))) {
-      return "soon";
-    }
-    return "future";
+  const handleStatusChange = () => {
+    const newStatus = task.status === "Completed" ? "Not Started" : "Completed";
+    onStatusChange(task.id, newStatus);
   };
   
-  const dueDateStatus = getDueDateStatus();
-  const isCompleted = task.status === "Completed";
-  
-  const handleExpandToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setExpanded(!expanded);
-  };
-  
-  const handleCheckboxChange = (checked: boolean) => {
-    onStatusChange(task.id, checked ? "Completed" : "Not Started");
-  };
-  
-  // Handle drag functions with visual feedback
-  const handleDragStart = (e: React.DragEvent) => {
-    setIsDragging(true);
-    if (onDragStart) {
-      onDragStart(e, task.id);
+  const getPriorityColor = () => {
+    switch (task.priority) {
+      case 5: return "text-red-500";
+      case 4: return "text-orange-500";
+      case 3: return "text-yellow-500";
+      case 2: return "text-green-500";
+      case 1: return "text-blue-500";
+      default: return "text-gray-500";
     }
   };
   
-  const handleDragEnd = () => {
-    setIsDragging(false);
-  };
-  
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-    if (onDragOver) {
-      onDragOver(e);
-    }
-  };
-  
-  const handleDragLeave = () => {
-    setIsDragOver(false);
-  };
-  
-  const handleDrop = (e: React.DragEvent) => {
-    setIsDragOver(false);
-    if (onDrop) {
-      onDrop(e, task.id);
-    }
-  };
-  
-  const handleRemoveFromParent = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    removeParentMutation.mutate(task.id);
-  };
-  
-  // Map priority number to label
-  const getPriorityLabel = (priority: number): string => {
-    switch(priority) {
-      case 5: return "Urgent";
-      case 4: return "Very High";
-      case 3: return "High";
-      case 2: return "Medium";
-      case 1: return "Low";
-      default: return "Medium";
-    }
+  const getStatusClass = () => {
+    if (task.status === "Completed") return "line-through opacity-60";
+    if (isHighPriority) return "font-semibold";
+    return "";
   };
 
   return (
-    <div 
-      className="task-item-container"
-      draggable={true}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
+    <div>
       <div 
-        className={cn(
-          "task-container flex items-start gap-3 hover:bg-accent/5 transition-all duration-200",
-          isCompleted && "opacity-60",
-          isHighPriority && "border-l-4 border-l-priority-high",
-          selected && "bg-accent/20 ring-1 ring-accent",
-          isDragging && "opacity-50",
-          isDragOver && "bg-accent/10 border-dashed"
-        )}
+        className={`
+          relative flex items-center p-2 rounded-md mb-1
+          ${selected ? "bg-accent/20" : "hover:bg-accent/10"}
+          ${level > 0 ? "ml-4 pl-4 border-l border-border/60" : ""}
+          ${task.status === "Completed" ? "bg-muted/30" : ""}
+        `}
         style={{ marginLeft: `${level * 1.5}rem` }}
-        onClick={() => onSelect(task.id)}
+        onDragOver={(e) => onDragOver && onDragOver(e)}
+        onDrop={(e) => onDrop && onDrop(e, task.id)}
       >
-        <div className="flex items-center gap-2 pt-1">
-          <Checkbox 
-            checked={isCompleted}
-            onCheckedChange={handleCheckboxChange}
-            onClick={(e) => e.stopPropagation()}
-            className="mt-1"
-          />
-          
-          {hasChildren && (
-            <button 
-              onClick={handleExpandToggle}
-              className="p-1 rounded-md hover:bg-accent/10"
-            >
-              {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            </button>
-          )}
-        </div>
+        {hasChildren && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6 p-1 rounded-full"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+            <span className="sr-only">Toggle</span>
+          </Button>
+        )}
         
-        <div className="flex-1">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-            <div className="space-y-1">
-              <h3 className={cn("font-medium text-base", isCompleted && "line-through")}>{task.title}</h3>
-              {task.description && (
-                <p className="text-sm text-muted-foreground line-clamp-1 pr-4">{task.description}</p>
-              )}
-              {task.parent_id && (
-                <div className="flex items-center text-xs text-muted-foreground">
-                  <span>Has parent</span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 p-0 px-1 hover:bg-transparent hover:text-destructive" 
-                    onClick={handleRemoveFromParent}
-                  >
-                    (remove)
-                  </Button>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              {task.project && (
-                <span className="text-sm text-muted-foreground whitespace-nowrap">
-                  {task.project}
-                </span>
-              )}
-              
-              <div className="flex items-center">
-                <div className="mr-2 cursor-move">
-                  <GripVertical size={14} className="opacity-50 hover:opacity-100" />
-                </div>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex">
-                        {[1, 2, 3, 4, 5].map((value) => (
-                          <Star
-                            key={value}
-                            size={14}
-                            className={value <= task.priority ? "text-priority-high fill-priority-high" : "text-muted"}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onPriorityChange && onPriorityChange(task.id, value);
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{getPriorityLabel(task.priority)} Priority ({task.priority}/5)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              
-              {task.due_date && (
-                <span 
-                  className={cn(
-                    "text-sm whitespace-nowrap px-2 py-0.5 rounded-full",
-                    dueDateStatus === "overdue" && "bg-destructive/10 text-destructive",
-                    dueDateStatus === "today" && "bg-priority-high/10 text-priority-high",
-                    dueDateStatus === "soon" && "bg-priority-medium/10 text-priority-medium",
-                    dueDateStatus === "future" && "bg-muted text-muted-foreground"
-                  )}
-                >
-                  {format(new Date(task.due_date), "MMM d")}
-                </span>
-              )}
-              
+        <div 
+          className={`flex items-center justify-between w-full ${hasChildren ? "ml-1" : "ml-7"}`} 
+          draggable
+          onDragStart={(e) => onDragStart && onDragStart(e, task.id)}
+        >
+          <div className="flex items-center flex-1">
+            <Checkbox 
+              checked={task.status === "Completed"} 
+              onCheckedChange={handleStatusChange}
+              className="mr-2"
+            />
+            <div className="flex flex-col">
               <span 
-                className={cn(
-                  "px-2 py-0.5 rounded-full text-xs font-medium",
-                  task.status === "Completed" && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-                  task.status === "In Progress" && "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-                  task.status === "Not Started" && "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                )}
+                className={`text-sm cursor-pointer ${getStatusClass()}`}
+                onClick={() => onSelect(task.id)}
               >
-                {task.status}
+                {task.title}
               </span>
+              
+              <div className="flex items-center gap-2 mt-1">
+                {task.due_date && (
+                  <div className="flex items-center text-xs text-muted-foreground">
+                    <CalendarIcon className="h-3 w-3 mr-1" />
+                    {new Date(task.due_date).toLocaleDateString()}
+                  </div>
+                )}
+                
+                {task.project && (
+                  <Badge variant="outline" className="text-xs px-1 py-0">
+                    {task.project}
+                  </Badge>
+                )}
+                
+                <Badge variant="outline" className={`text-xs px-1 py-0 ${getPriorityColor()}`}>
+                  P{task.priority || 3}
+                </Badge>
+              </div>
             </div>
+          </div>
+          
+          <div className="flex items-center">
+            {showPriorityScore && task.priorityScore !== undefined && (
+              <Badge variant="outline" className="ml-2 bg-primary/10">
+                Score: {task.priorityScore?.toFixed(1)}
+              </Badge>
+            )}
           </div>
         </div>
       </div>
       
-      {hasChildren && expanded && (
-        <div className="children-container animate-accordion-down">
+      {hasChildren && isExpanded && (
+        <div className="ml-4">
           {children}
         </div>
       )}

@@ -1,21 +1,18 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from "lucide-react";
-import { format, addDays, startOfWeek, endOfWeek, isSameDay, isToday, addMonths, subMonths } from "date-fns";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-// Types for events/tasks in calendar
+import React, { useState } from 'react';
+import { Calendar } from '@/components/ui/calendar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday } from 'date-fns';
+
 export interface CalendarEvent {
   id: string;
   title: string;
-  date: Date | string;
+  date: string;
   priority: number;
   status: string;
-  color?: string;
 }
 
 interface CalendarViewProps {
@@ -24,359 +21,179 @@ interface CalendarViewProps {
   onDateClick?: (date: Date) => void;
 }
 
-const CalendarView = ({ events, onEventClick, onDateClick }: CalendarViewProps) => {
-  const currentDate = new Date();
-  const [selectedDate, setSelectedDate] = useState(currentDate);
-  const [viewMode, setViewMode] = useState<"month" | "week" | "day">("month");
-  
-  // Month navigation
-  const goToPreviousView = () => {
-    if (viewMode === "month") {
-      setSelectedDate(prev => subMonths(prev, 1));
-    } else if (viewMode === "week") {
-      setSelectedDate(prev => addDays(prev, -7));
-    } else {
-      setSelectedDate(prev => addDays(prev, -1));
-    }
-  };
-  
-  const goToNextView = () => {
-    if (viewMode === "month") {
-      setSelectedDate(prev => addMonths(prev, 1));
-    } else if (viewMode === "week") {
-      setSelectedDate(prev => addDays(prev, 7));
-    } else {
-      setSelectedDate(prev => addDays(prev, 1));
-    }
-  };
-  
-  const goToToday = () => {
-    setSelectedDate(new Date());
+const CalendarView: React.FC<CalendarViewProps> = ({ events, onEventClick, onDateClick }) => {
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [isTooltipVisible, setIsTooltipVisible] = useState<boolean>(false);
+  const [tooltipContent, setTooltipContent] = useState<CalendarEvent[]>([]);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+
+  const handlePreviousMonth = () => {
+    setCurrentMonth(prev => addMonths(prev, -1));
   };
 
-  // Week view helpers
-  const startOfCurrentWeek = startOfWeek(selectedDate);
-  const endOfCurrentWeek = endOfWeek(selectedDate);
-  
-  // Generate days for week view
-  const weekDays = [];
-  let day = startOfCurrentWeek;
-  while (day <= endOfCurrentWeek) {
-    weekDays.push(new Date(day));
-    day = addDays(day, 1);
-  }
-  
-  // Get events for a specific date
+  const handleNextMonth = () => {
+    setCurrentMonth(prev => addMonths(prev, 1));
+  };
+
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date);
+    if (onDateClick) {
+      onDateClick(date);
+    }
+  };
+
   const getEventsForDate = (date: Date) => {
     return events.filter(event => {
       const eventDate = new Date(event.date);
-      return isSameDay(eventDate, date);
+      return isSameDay(date, eventDate);
     });
   };
 
-  // Month view: Generate calendar days with proper empty cells for the month
-  const generateMonthCalendarDays = () => {
-    const daysInMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0).getDate();
-    const firstDayOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1).getDay();
-    
-    const days = [];
-    
-    // Add empty cells for days before the first day of month
-    for (let i = 0; i < firstDayOfMonth; i++) {
-      days.push(<div key={`empty-${i}`} className="p-2 border border-border/50 bg-background/80 h-full min-h-[85px] rounded-md m-[1px]"></div>);
-    }
-    
-    // Add days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), day);
-      const dayEvents = getEventsForDate(date);
-      
-      const isCurrentDay = isToday(date);
-      
-      days.push(
-        <div 
-          key={day}
-          onClick={() => onDateClick && onDateClick(date)}
-          className={cn(
-            "p-2 border border-border/50 h-full min-h-[85px] relative cursor-pointer hover:bg-accent/10 transition-colors rounded-md m-[1px]",
-            isCurrentDay ? "bg-primary/10 border-primary/50 shadow-sm" : "bg-card/80"
-          )}
-        >
-          <span className={cn(
-            "text-sm absolute top-2 right-2 h-7 w-7 flex items-center justify-center rounded-full font-medium",
-            isCurrentDay ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted/40"
-          )}>
-            {day}
-          </span>
+  // Get the days of the current month
+  const daysInMonth = eachDayOfInterval({
+    start: startOfMonth(currentMonth),
+    end: endOfMonth(currentMonth)
+  });
+
+  // Custom day renderer for calendar
+  const renderDay = (date: Date) => {
+    const eventsForDate = getEventsForDate(date);
+    const hasEvents = eventsForDate.length > 0;
+    const isCurrentMonth = isSameMonth(date, currentMonth);
+    const isSelectedDay = selectedDate ? isSameDay(date, selectedDate) : false;
+    const isTodayDate = isToday(date);
+
+    return (
+      <div 
+        className={`
+          relative w-full h-14 p-1
+          ${isCurrentMonth ? '' : 'opacity-40'}
+          ${isSelectedDay ? 'bg-primary/20' : ''}
+          ${isTodayDate ? 'font-bold' : ''}
+          hover:bg-muted/40 cursor-pointer
+        `}
+        onClick={() => handleDateClick(date)}
+        onMouseEnter={(e) => {
+          if (hasEvents) {
+            setTooltipContent(eventsForDate);
+            setTooltipPosition({ 
+              x: e.currentTarget.getBoundingClientRect().x + 20,
+              y: e.currentTarget.getBoundingClientRect().y - 10
+            });
+            setIsTooltipVisible(true);
+          }
+        }}
+        onMouseLeave={() => setIsTooltipVisible(false)}
+      >
+        <div className="absolute top-1 left-2 text-xs">
+          {date.getDate()}
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-0.5 overflow-hidden max-h-6">
+          {eventsForDate.slice(0, 2).map((event, index) => (
+            <div
+              key={event.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEventClick(event.id);
+              }}
+              className={`
+                text-xs px-1 truncate w-full
+                ${event.status === 'Completed' ? 'bg-green-500/20' : 
+                  event.priority >= 4 ? 'bg-red-500/20' : 
+                  event.priority === 3 ? 'bg-yellow-500/20' : 'bg-blue-500/20'}
+                ${event.status === 'Completed' ? 'line-through' : ''}
+                rounded
+              `}
+            >
+              {event.title}
+            </div>
+          ))}
           
-          {dayEvents.length > 0 && (
-            <div className="mt-6 space-y-1">
-              {dayEvents.map(event => {
-                // Determine color based on priority or status
-                let colorClass = "";
-                if (event.color) {
-                  colorClass = event.color;
-                } else if (event.priority === 5) {
-                  colorClass = "bg-priority-urgent";
-                } else if (event.priority === 4) {
-                  colorClass = "bg-priority-high";
-                } else if (event.priority === 3) {
-                  colorClass = "bg-priority-medium";
-                } else if (event.status === "Completed") {
-                  colorClass = "bg-green-500";
-                } else {
-                  colorClass = "bg-accent";
-                }
-                
-                return (
-                  <div 
-                    key={event.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEventClick(event.id);
-                    }}
-                    className={cn(
-                      `${colorClass} text-white text-xs p-1 rounded truncate hover:opacity-80`,
-                      event.status === "Completed" ? "opacity-60" : ""
-                    )}
-                  >
-                    {event.title}
-                  </div>
-                );
-              })}
+          {eventsForDate.length > 2 && (
+            <div className="text-xs text-muted-foreground w-full text-center">
+              +{eventsForDate.length - 2} more
             </div>
           )}
         </div>
-      );
-    }
-    
-    return days;
+      </div>
+    );
   };
 
   return (
-    <Card className="w-full h-full flex flex-col border-primary/10 bg-gradient-to-b from-background to-background/95 shadow-md overflow-hidden">
-      <CardHeader className="pb-0 flex-shrink-0">
-        <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 sm:items-center sm:justify-between">
-          <CardTitle className="text-xl flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5 text-primary" />
-            <span>{format(selectedDate, 'MMMM yyyy')}</span>
-            <Badge variant="outline" className="ml-2 bg-primary/5">
-              {viewMode === "month" ? "Month View" : viewMode === "week" ? "Week View" : "Day View"}
-            </Badge>
-          </CardTitle>
-          
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center gap-1 bg-primary/5 p-1 rounded-lg">
-              <Button variant="ghost" size="icon" onClick={goToPreviousView} className="h-8 w-8">
-                <ChevronLeft className="h-4 w-4" />
-                <span className="sr-only">Previous</span>
-              </Button>
-              
-              <Button variant="outline" onClick={goToToday} className="h-8 text-xs px-2">
-                Today
-              </Button>
-              
-              <Button variant="ghost" size="icon" onClick={goToNextView} className="h-8 w-8">
-                <ChevronRight className="h-4 w-4" />
-                <span className="sr-only">Next</span>
-              </Button>
-            </div>
-          </div>
+    <div className="h-full flex flex-col bg-card">
+      <div className="p-4 border-b flex justify-between items-center">
+        <h2 className="text-xl font-semibold">
+          {format(currentMonth, 'MMMM yyyy')}
+        </h2>
+        <div className="flex space-x-2">
+          <Button variant="outline" size="icon" onClick={handlePreviousMonth}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleNextMonth}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
-        
-        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <Tabs 
-            value={viewMode} 
-            onValueChange={(value) => setViewMode(value as "month" | "week" | "day")} 
-            className="w-full"
-          >
-            <TabsList className="bg-primary/10 p-1 rounded-lg">
-              <TabsTrigger value="month" className="text-xs px-3 py-1">Month</TabsTrigger>
-              <TabsTrigger value="week" className="text-xs px-3 py-1">Week</TabsTrigger>
-              <TabsTrigger value="day" className="text-xs px-3 py-1">Day</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          
-          <div className="flex items-center space-x-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge className="bg-priority-urgent">Urgent</Badge>
-                </TooltipTrigger>
-                <TooltipContent>Priority 5</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge className="bg-priority-high">High</Badge>
-                </TooltipTrigger>
-                <TooltipContent>Priority 4</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge className="bg-priority-medium">Medium</Badge>
-                </TooltipTrigger>
-                <TooltipContent>Priority 3</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            {onDateClick && (
-              <Button variant="outline" size="sm" onClick={() => onDateClick(new Date())}>
-                <Plus className="h-3.5 w-3.5 mr-1" />
-                Add
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="flex-grow overflow-auto p-2 mt-2">
-        <Tabs value={viewMode} className="h-full">
-          <TabsContent value="month" className="mt-0 h-full">
-            <div className="grid grid-cols-7 gap-2 h-full">
-              {/* Day headers */}
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                <div key={day} className="p-2 text-center font-semibold text-sm mb-1 text-foreground/80">
-                  {day}
-                </div>
-              ))}
-              
-              {/* Calendar days */}
-              {generateMonthCalendarDays()}
+      </div>
+
+      <div className="flex-1 p-2 overflow-auto">
+        <div className="grid grid-cols-7 gap-px">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+            <div key={day} className="p-2 text-center font-medium text-sm">
+              {day}
             </div>
-          </TabsContent>
+          ))}
           
-          <TabsContent value="week" className="mt-0 h-full">
-            <div className="grid grid-cols-7 gap-1 h-full">
-              {/* Week day headers */}
-              {weekDays.map(day => (
-                <div key={day.toString()} className="text-center p-2">
-                  <div className={cn(
-                    "font-medium", 
-                    isToday(day) ? "text-primary" : ""
-                  )}>
-                    {format(day, 'EEE')}
-                  </div>
-                  <div className={cn(
-                    "text-sm rounded-full w-8 h-8 flex items-center justify-center mx-auto",
-                    isToday(day) ? "bg-primary text-primary-foreground" : ""
-                  )}>
-                    {format(day, 'd')}
-                  </div>
-                </div>
-              ))}
-              
-              {/* Week view events */}
-              {weekDays.map(day => {
-                const dayEvents = getEventsForDate(day);
-                return (
-                  <div 
-                    key={day.toString() + '-events'} 
-                    className={cn(
-                      "border border-border/50 min-h-[200px] p-2 rounded-md",
-                      isToday(day) ? "bg-primary/5" : ""
-                    )}
-                    onClick={() => onDateClick && onDateClick(day)}
+          {daysInMonth.map((day, i) => (
+            <div 
+              key={i} 
+              className="border border-border/20"
+            >
+              {renderDay(day)}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tooltip for events */}
+      {isTooltipVisible && tooltipContent.length > 0 && (
+        <div 
+          className="absolute z-50 bg-popover text-popover-foreground p-3 rounded-md shadow-lg min-w-56 max-w-80"
+          style={{
+            left: `${tooltipPosition.x}px`,
+            top: `${tooltipPosition.y}px`,
+          }}
+        >
+          <div className="text-sm font-medium mb-2">
+            {format(new Date(tooltipContent[0].date), 'MMMM d, yyyy')}
+          </div>
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {tooltipContent.map(event => (
+              <Card 
+                key={event.id} 
+                className="p-2 cursor-pointer hover:bg-accent/50"
+                onClick={() => onEventClick(event.id)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className={`text-sm ${event.status === 'Completed' ? 'line-through' : ''}`}>
+                    {event.title}
+                  </span>
+                  <Badge 
+                    variant={event.status === 'Completed' ? 'outline' : 
+                            event.priority >= 4 ? 'destructive' : 
+                            event.priority === 3 ? 'default' : 'secondary'}
+                    className="text-xs"
                   >
-                    {dayEvents.map(event => (
-                      <div 
-                        key={event.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEventClick(event.id);
-                        }}
-                        className={cn(
-                          "mb-1.5 p-2 rounded-md text-sm cursor-pointer border border-transparent transition-all hover:translate-y-[-1px] shadow-sm",
-                          event.priority === 5 ? "bg-red-500/90 text-white hover:bg-red-500 hover:shadow-md" :
-                          event.priority === 4 ? "bg-orange-500/90 text-white hover:bg-orange-500 hover:shadow-md" :
-                          event.priority === 3 ? "bg-yellow-500/90 text-white hover:bg-yellow-500 hover:shadow-md" :
-                          event.status === "Completed" ? "bg-green-500/20 text-green-700 dark:text-green-300 hover:bg-green-500/30" :
-                          "bg-blue-500/20 text-blue-700 dark:text-blue-300 hover:bg-blue-500/30"
-                        )}
-                      >
-                        <div className="font-medium truncate">{event.title}</div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="day" className="mt-0 h-full">
-            <div className="flex flex-col h-full">
-              <div className="text-center mb-4">
-                <div className="text-xl font-medium">
-                  {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+                    {event.status === 'Completed' ? 'Done' : `P${event.priority}`}
+                  </Badge>
                 </div>
-                {isToday(selectedDate) && (
-                  <Badge className="bg-primary">Today</Badge>
-                )}
-              </div>
-              
-              <div className="space-y-2 flex-grow overflow-y-auto p-2" onClick={() => onDateClick && onDateClick(selectedDate)}>
-                {getEventsForDate(selectedDate).length > 0 ? (
-                  getEventsForDate(selectedDate).map(event => (
-                    <div 
-                      key={event.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEventClick(event.id);
-                      }}
-                      className={cn(
-                        "p-4 border rounded-md cursor-pointer hover:bg-accent/5 transition-all hover:shadow-sm",
-                        event.status === "Completed" ? "opacity-60" : ""
-                      )}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-medium">{event.title}</h3>
-                        </div>
-                        <Badge className={cn(
-                          event.priority === 5 ? "bg-priority-urgent" :
-                          event.priority === 4 ? "bg-priority-high" :
-                          event.priority === 3 ? "bg-priority-medium" :
-                          event.status === "Completed" ? "bg-green-500" :
-                          "bg-accent"
-                        )}>
-                          {event.priority === 5 ? "Urgent" :
-                           event.priority === 4 ? "High" :
-                           event.priority === 3 ? "Medium" :
-                           event.priority === 2 ? "Low" : "Normal"}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-16 text-muted-foreground">
-                    <CalendarIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <p>No events scheduled for this day</p>
-                    {onDateClick && (
-                      <Button 
-                        variant="outline" 
-                        className="mt-4"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDateClick(selectedDate);
-                        }}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Task
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

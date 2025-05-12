@@ -254,6 +254,7 @@ const Tasks = () => {
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         selected={selectedTaskId === task.id}
+        showPriorityScore={true}
       >
         {task.children && task.children.length > 0 && renderTaskHierarchy(task.children, level + 1)}
       </TaskItem>
@@ -353,12 +354,19 @@ const Tasks = () => {
                         variant="secondary" 
                         className="rounded-full px-2.5 py-0.5"
                       >
-                        {5 - index}
+                        {index + 1}
                       </Badge>
                       <span className="font-medium">{task.title}</span>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {task.due_date ? new Date(task.due_date).toLocaleDateString() : "No due date"}
+                    <div className="flex items-center space-x-3">
+                      <div className="text-sm text-muted-foreground">
+                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : "No due date"}
+                      </div>
+                      {task.priorityScore !== undefined && (
+                        <Badge variant="outline" className="ml-2 bg-primary/10">
+                          Score: {task.priorityScore?.toFixed(1)}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 ))

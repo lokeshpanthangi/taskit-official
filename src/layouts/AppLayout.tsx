@@ -15,7 +15,7 @@ const AppLayout = () => {
   // Set default theme if none is selected
   useEffect(() => {
     if (!theme) {
-      setTheme("dark");
+      setTheme("light");
     }
   }, [theme, setTheme]);
 

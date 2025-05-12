@@ -33,6 +33,9 @@ import NotFound from "./pages/NotFound";
 // Route Protection
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
+// Theme CSS
+import "./styles/themes.css";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
