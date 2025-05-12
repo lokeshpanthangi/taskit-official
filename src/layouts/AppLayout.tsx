@@ -1,13 +1,23 @@
+
 import { Outlet } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import TaskDetailPanel from "@/components/tasks/TaskDetailPanel";
+import { useTheme } from "next-themes";
 
 const AppLayout = () => {
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const { theme, setTheme } = useTheme();
+
+  // Set default theme if none is selected
+  useEffect(() => {
+    if (!theme) {
+      setTheme("dark");
+    }
+  }, [theme, setTheme]);
 
   // Toggle task detail panel
   const toggleDetailPanel = (taskId?: string) => {

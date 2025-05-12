@@ -41,6 +41,7 @@ const Tasks = () => {
   
   // Task drag-and-drop state
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [draggedPriorityIndex, setDraggedPriorityIndex] = useState<number | null>(null);
   
   // Fetch tasks with useTasks hook
   const { tasks, isLoading: tasksLoading } = useTasks();
@@ -184,6 +185,53 @@ const Tasks = () => {
     
     setDraggedTaskId(null);
   };
+
+  // Priority list drag handlers
+  const handlePriorityDragStart = (e: React.DragEvent, index: number, taskId: string) => {
+    setDraggedPriorityIndex(index);
+    setDraggedTaskId(taskId);
+    e.dataTransfer.setData('text/plain', index.toString());
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  
+  const handlePriorityDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+  
+  const handlePriorityDrop = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    
+    if (draggedPriorityIndex === null || draggedPriorityIndex === index) return;
+    
+    // Reorder top priority tasks
+    const reorderedTasks = [...topUrgentTasks];
+    const [movedTask] = reorderedTasks.splice(draggedPriorityIndex, 1);
+    reorderedTasks.splice(index, 0, movedTask);
+    
+    // Update priorities based on new positions (5 = highest, 1 = lowest for top 5)
+    const updatedTasks = reorderedTasks.map((task, idx) => {
+      // Priority is inverse of position (first item has highest priority)
+      const newPriority = 5 - idx;
+      
+      // Only update if priority changed
+      if (task.priority !== newPriority) {
+        updateTaskMutation.mutate({
+          id: task.id,
+          updates: { priority: newPriority }
+        });
+        // Update local state as well
+        return {...task, priority: newPriority};
+      }
+      return task;
+    });
+    
+    setTopUrgentTasks(updatedTasks);
+    setDraggedPriorityIndex(null);
+    setDraggedTaskId(null);
+    
+    toast.success("Task priority updated");
+  };
   
   // Get filtered flat list of tasks
   const filteredTasks = filterTasks(tasks || []);
@@ -289,18 +337,23 @@ const Tasks = () => {
           <CardContent>
             <div className="space-y-2">
               {topUrgentTasks.length > 0 ? (
-                topUrgentTasks.map(task => (
+                topUrgentTasks.map((task, index) => (
                   <div 
                     key={task.id}
                     className="flex items-center justify-between p-3 rounded-md bg-secondary/20 cursor-pointer hover:bg-secondary/30"
                     onClick={() => handleTaskSelect(task.id)}
+                    draggable
+                    onDragStart={(e) => handlePriorityDragStart(e, index, task.id)}
+                    onDragOver={(e) => handlePriorityDragOver(e, index)}
+                    onDrop={(e) => handlePriorityDrop(e, index)}
+                    style={{ opacity: draggedPriorityIndex === index ? 0.5 : 1 }}
                   >
                     <div className="flex items-center space-x-3">
                       <Badge 
-                        variant="destructive" 
+                        variant="secondary" 
                         className="rounded-full px-2.5 py-0.5"
                       >
-                        {task.priorityScore?.toFixed(1) || task.priority}
+                        {5 - index}
                       </Badge>
                       <span className="font-medium">{task.title}</span>
                     </div>

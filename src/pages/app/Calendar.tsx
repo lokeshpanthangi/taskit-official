@@ -11,7 +11,8 @@ import { format } from "date-fns";
 import { useOutletContext } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
 import { useTasks } from "@/hooks/useTasks";
-import { Task } from "@/services/taskService";
+import { Task, createTask } from "@/services/taskService";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type OutletContextType = {
   toggleDetailPanel: (taskId?: string) => void;
@@ -22,12 +23,28 @@ const Calendar = () => {
   const { toggleDetailPanel } = useOutletContext<OutletContextType>();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   // Use the useTasks hook instead of direct query
   const { tasks, isLoading } = useTasks();
   
   console.log("Calendar: Current user ID:", user?.id); // Debug log
   console.log("Calendar: Tasks count:", tasks?.length); // Debug log
+
+  // Create task mutation
+  const createTaskMutation = useMutation({
+    mutationFn: createTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      setIsCreateTaskModalOpen(false);
+      toast.success("Task created successfully!");
+      setSelectedDate(null);
+    },
+    onError: (error) => {
+      console.error("Error creating task:", error);
+      toast.error("Failed to create task");
+    },
+  });
 
   // Convert tasks to calendar events format
   const mapTasksToEvents = (tasks: Task[] | undefined): CalendarEvent[] => {
@@ -62,10 +79,9 @@ const Calendar = () => {
     setIsCreateTaskModalOpen(false);
   };
 
-  // Handle task creation success
-  const handleTaskCreated = () => {
-    toast.success("Task created successfully");
-    handleCloseCreateTaskModal();
+  // Handle task creation
+  const handleCreateTask = (newTask: any) => {
+    createTaskMutation.mutate(newTask);
   };
   
   if (!isAuthenticated) {
@@ -147,7 +163,7 @@ const Calendar = () => {
             <CreateTaskModal 
               isOpen={isCreateTaskModalOpen}
               onClose={handleCloseCreateTaskModal} 
-              onSuccess={handleTaskCreated}
+              onSave={handleCreateTask}
               defaultDate={selectedDate}
             />
           </div>

@@ -1,7 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, User, Menu } from "lucide-react";
+import { User, Menu } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
@@ -67,17 +66,12 @@ const Header = () => {
           </Button>
         </SidebarTrigger>
 
-        <div className="flex-1 md:w-80 lg:w-96">
-          <form className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search tasks..."
-              className="w-full rounded-md bg-background pl-8 md:w-[240px] lg:w-[300px]"
-            />
-          </form>
+        {/* Title/Logo Area (left side) */}
+        <div className="flex-1">
+          {/* You can add a logo or title here if needed */}
         </div>
 
+        {/* User actions moved to the right */}
         <div className="flex items-center gap-2">
           {isAuthenticated ? (
             <>
