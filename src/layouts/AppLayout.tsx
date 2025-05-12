@@ -43,10 +43,8 @@ const AppLayout = () => {
         
         {/* Main content area */}
         <div className="flex flex-col flex-1 overflow-hidden w-full">
-          {/* Top header */}
-          <div className="flex items-center justify-between p-4 border-b border-border/40">
-            <Header />
-          </div>
+          {/* Top header - modified to have Header component span full width */}
+          <Header />
           
           {/* Content with optional right panel */}
           <div className="flex flex-1 overflow-hidden w-full">

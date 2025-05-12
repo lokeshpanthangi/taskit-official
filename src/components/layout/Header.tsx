@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { User, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
@@ -58,7 +58,7 @@ const Header = () => {
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center px-4 gap-4">
+      <div className="flex h-16 items-center px-4">
         <SidebarTrigger>
           <Button variant="ghost" size="icon" className="md:hidden">
             <Menu className="h-5 w-5" />
@@ -71,7 +71,7 @@ const Header = () => {
           {/* You can add a logo or title here if needed */}
         </div>
 
-        {/* User actions moved to the right */}
+        {/* User actions moved to the right end */}
         <div className="flex items-center gap-2">
           {isAuthenticated ? (
             <>

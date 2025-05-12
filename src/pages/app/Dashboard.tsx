@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,10 @@ import { fetchTasks, Task } from "@/services/taskService";
 import { fetchProjects } from "@/services/projectService";
 import { createNotification } from "@/services/notificationService";
 import { useQuery } from "@tanstack/react-query";
+
+// Import Sun and Moon icons
+import { Sun } from "lucide-react"; 
+import { Moon } from "lucide-react";
 
 type OutletContextType = {
   toggleDetailPanel: (taskId?: string) => void;
@@ -249,44 +254,7 @@ const Dashboard = () => {
       </div>
       
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Recent Activity */}
-        <Card className="gradient-border animate-fade-in">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Your latest task updates</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {stats.recentActivity.length > 0 ? (
-                stats.recentActivity.map((activity, index) => (
-                  <div 
-                    key={activity.id} 
-                    className={`flex items-center justify-between p-2 rounded-md hover:bg-accent/5 cursor-pointer
-                      ${index === 0 ? 'animate-pop [animation-delay:100ms]' : ''}
-                      ${index === 1 ? 'animate-pop [animation-delay:200ms]' : ''}
-                      ${index === 2 ? 'animate-pop [animation-delay:300ms]' : ''}
-                      ${index === 3 ? 'animate-pop [animation-delay:400ms]' : ''}
-                    `}
-                    onClick={() => toggleDetailPanel(activity.id)}
-                  >
-                    <div>
-                      <p className="text-sm font-medium">{activity.action}: <span className="text-primary">{activity.item}</span></p>
-                      <p className="text-xs text-muted-foreground">{activity.time}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" className="hover:bg-accent/10">
-                      View
-                    </Button>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-6 text-muted-foreground">
-                  No recent activity found
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        
+        {/* SWAPPED ORDER: Top Priority Tasks now comes before Recent Activity */}
         {/* Quick Links */}
         <Card className="gradient-border animate-fade-in">
           <CardHeader>
@@ -342,51 +310,47 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Recent Activity */}
+        <Card className="gradient-border animate-fade-in">
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Your latest task updates</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {stats.recentActivity.length > 0 ? (
+                stats.recentActivity.map((activity, index) => (
+                  <div 
+                    key={activity.id} 
+                    className={`flex items-center justify-between p-2 rounded-md hover:bg-accent/5 cursor-pointer
+                      ${index === 0 ? 'animate-pop [animation-delay:100ms]' : ''}
+                      ${index === 1 ? 'animate-pop [animation-delay:200ms]' : ''}
+                      ${index === 2 ? 'animate-pop [animation-delay:300ms]' : ''}
+                      ${index === 3 ? 'animate-pop [animation-delay:400ms]' : ''}
+                    `}
+                    onClick={() => toggleDetailPanel(activity.id)}
+                  >
+                    <div>
+                      <p className="text-sm font-medium">{activity.action}: <span className="text-primary">{activity.item}</span></p>
+                      <p className="text-xs text-muted-foreground">{activity.time}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" className="hover:bg-accent/10">
+                      View
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  No recent activity found
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 };
-
-function Sun(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2" />
-      <path d="M12 20v2" />
-      <path d="m4.93 4.93 1.41 1.41" />
-      <path d="m17.66 17.66 1.41 1.41" />
-      <path d="M2 12h2" />
-      <path d="M20 12h2" />
-      <path d="m6.34 17.66-1.41 1.41" />
-      <path d="m19.07 4.93-1.41 1.41" />
-    </svg>
-  )
-}
-
-function Moon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-    </svg>
-  )
-}
 
 export default Dashboard;
