@@ -237,6 +237,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true);
       
+      // Use the token to verify the user's session
+      // Note: When using the reset password flow in Supabase, the token is handled automatically
+      // through the URL and the user is already in a valid session when they reach this point
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });

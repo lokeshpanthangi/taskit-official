@@ -312,71 +312,12 @@ const Tasks = () => {
         </div>
       </div>
       
-      {/* Tabs for All Tasks / Top Priority Tasks */}
-      <div className="flex space-x-2 border-b">
-        <Button
-          variant="ghost"
-          className={`rounded-none border-b-2 ${activeTab === "all" ? "border-primary" : "border-transparent"}`}
-          onClick={() => setActiveTab("all")}
-        >
-          All Tasks
-        </Button>
-        <Button
-          variant="ghost"
-          className={`rounded-none border-b-2 ${activeTab === "priority" ? "border-primary" : "border-transparent"}`}
-          onClick={() => setActiveTab("priority")}
-        >
-          Top Priority Tasks
-        </Button>
+      {/* Tasks heading */}
+      <div className="border-b pb-2">
+        <h2 className="text-xl font-semibold">All Tasks</h2>
       </div>
       
-      {activeTab === "priority" && (
-        <Card className="bg-card border shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xl">Top 5 Priority Tasks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {topUrgentTasks.length > 0 ? (
-                topUrgentTasks.map((task, index) => (
-                  <div 
-                    key={task.id}
-                    className="flex items-center justify-between p-3 rounded-md bg-secondary/20 cursor-pointer hover:bg-secondary/30"
-                    onClick={() => handleTaskSelect(task.id)}
-                    draggable
-                    onDragStart={(e) => handlePriorityDragStart(e, index, task.id)}
-                    onDragOver={(e) => handlePriorityDragOver(e, index)}
-                    onDrop={(e) => handlePriorityDrop(e, index)}
-                    style={{ opacity: draggedPriorityIndex === index ? 0.5 : 1 }}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Badge 
-                        variant="secondary" 
-                        className="rounded-full px-2.5 py-0.5"
-                      >
-                        {index + 1}
-                      </Badge>
-                      <span className="font-medium">{task.title}</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="text-sm text-muted-foreground">
-                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : "No due date"}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-muted-foreground">No tasks found. Create your first task to see it here.</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      {activeTab === "all" && (
-        <>
+      <div>
           <div className="flex flex-col gap-4 md:flex-row">
             <div className="relative flex-1">
               <Input 
@@ -439,8 +380,7 @@ const Tasks = () => {
               />
             )}
           </div>
-        </>
-      )}
+      </div>
       
       <CreateTaskModal 
         isOpen={isCreateModalOpen}

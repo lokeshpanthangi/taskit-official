@@ -1,18 +1,21 @@
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar as CalendarIcon } from "lucide-react";
-import CalendarView, { CalendarEvent } from "@/components/calendar/CalendarView";
+import { Plus, Calendar as CalendarIcon, Clock, CheckCircle, ArrowRight, Loader2 } from "lucide-react";
+import { CalendarEvent } from "@/components/calendar/CalendarView";
+import { FullScreenCalendar } from "@/components/ui/fullscreen-calendar";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import CreateTaskModal from "@/components/tasks/CreateTaskModal";
-import { format } from "date-fns";
+import { format, addDays, isToday, isTomorrow } from "date-fns";
 import { useOutletContext } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
 import { useTasks } from "@/hooks/useTasks";
 import { Task, createTask } from "@/services/taskService";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 type OutletContextType = {
   toggleDetailPanel: (taskId?: string) => void;
@@ -43,21 +46,68 @@ const Calendar = () => {
     },
   });
 
-  // Convert tasks to calendar events format
-  const mapTasksToEvents = (tasks: Task[] | undefined): CalendarEvent[] => {
-    if (!tasks) return [];
+  // Define the types for the calendar data
+  type CalendarDataItem = {
+    day: Date;
+    events: Array<{
+      id: string;
+      name: string;
+      time: string;
+      datetime: string;
+    }>;
+  };
 
-    return tasks.map(task => ({
+  // Convert tasks to calendar events format
+  const mapTasksToEvents = (tasks: Task[] | undefined): { calendarEvents: CalendarEvent[], calendarData: CalendarDataItem[] } => {
+    if (!tasks) return { calendarEvents: [], calendarData: [] };
+    
+    // For the original CalendarView component
+    const calendarEvents: CalendarEvent[] = tasks.map(task => ({
       id: task.id,
       title: task.title,
       date: task.due_date || new Date().toISOString(),
-      priority: task.priority || 3,
-      status: task.status
+      priority: task.priority || 0,
+      status: task.status || 'Not Started'
     }));
+  
+    // For the FullScreenCalendar component
+    const calendarData = tasks.reduce<CalendarDataItem[]>((acc, task) => {
+      if (!task.due_date) return acc;
+      
+      const dueDate = new Date(task.due_date);
+      const dateKey = format(dueDate, 'yyyy-MM-dd');
+      
+      // Find if we already have an entry for this date
+      const existingDateIndex = acc.findIndex(item => 
+        format(item.day, 'yyyy-MM-dd') === dateKey
+      );
+      
+      const eventItem = {
+        id: task.id,
+        name: task.title,
+        time: format(dueDate, 'h:mm a'),
+        datetime: task.due_date
+      };
+      
+      if (existingDateIndex >= 0) {
+        // Add to existing date entry
+        acc[existingDateIndex].events.push(eventItem);
+      } else {
+        // Create new date entry
+        acc.push({
+          day: dueDate,
+          events: [eventItem]
+        });
+      }
+      
+      return acc;
+    }, []);
+    
+    return { calendarEvents, calendarData };
   };
   
-  // Add the calendarEvents variable
-  const calendarEvents = mapTasksToEvents(tasks);
+  // Add the calendarEvents and calendarData variables
+  const { calendarEvents, calendarData } = mapTasksToEvents(tasks);
 
   // Handle clicking on an event
   const handleEventClick = (eventId: string) => {
@@ -92,8 +142,27 @@ const Calendar = () => {
     );
   }
 
+  // Get upcoming tasks for the next 7 days
+  const getUpcomingTasks = () => {
+    if (!tasks) return [];
+    
+    const today = new Date();
+    const nextWeek = addDays(today, 7);
+    
+    return tasks.filter(task => {
+      if (!task.due_date) return false;
+      const dueDate = new Date(task.due_date);
+      return dueDate >= today && dueDate <= nextWeek;
+    }).sort((a, b) => {
+      if (!a.due_date || !b.due_date) return 0;
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    });
+  };
+  
+  const upcomingTasks = getUpcomingTasks();
+
   return (
-    <div className="space-y-6 animate-fade-in h-full w-full max-w-full mx-auto overflow-x-auto pb-6">
+    <div className="space-y-4 animate-fade-in h-full w-full max-w-full mx-auto pb-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -103,48 +172,59 @@ const Calendar = () => {
           <p className="text-muted-foreground">Schedule and manage your tasks visually</p>
         </div>
         
-        <Button onClick={() => setIsCreateTaskModalOpen(true)} className="shadow-sm hover:shadow-md transition-all">
+        <Button onClick={() => setIsCreateTaskModalOpen(true)} className="shadow-sm hover:shadow-md transition-all bg-gradient-to-r from-primary to-primary/80">
           <Plus className="h-4 w-4 mr-2" />
           New Task
         </Button>
       </div>
       
-      {isLoading ? (
-        <Card className="h-[calc(100vh-200px)] bg-card/60 backdrop-blur-sm border-primary/10">
-          <CardContent className="flex items-center justify-center h-full">
-            <div className="animate-pulse flex flex-col items-center">
-              <div className="h-12 w-12 rounded-full bg-primary/20 mb-4"></div>
-              <div className="h-4 w-32 rounded bg-primary/20"></div>
+      <div className="w-full">
+        {isLoading ? (
+          <Card className="h-[calc(100vh-300px)] bg-card/60 backdrop-blur-sm border-primary/10">
+            <CardContent className="flex items-center justify-center h-full">
+              <div className="animate-pulse flex flex-col items-center">
+                <Loader2 className="h-12 w-12 text-primary/50 animate-spin mb-4" />
+                <div className="text-muted-foreground">Loading your calendar...</div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : calendarEvents.length === 0 ? (
+          <Card className="h-[calc(100vh-300px)] bg-card/60 backdrop-blur-sm border-primary/10">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                No scheduled tasks
+              </CardTitle>
+              <CardDescription>
+                Your calendar is currently empty
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center h-64 p-6">
+              <div className="bg-muted/50 rounded-full p-8 mb-6">
+                <CalendarIcon className="h-12 w-12 text-muted-foreground/50" />
+              </div>
+              <p className="text-muted-foreground mb-6 text-center max-w-md">
+                Your calendar is empty. Create your first task with a due date to see it on the calendar.
+              </p>
+              <Button onClick={() => setIsCreateTaskModalOpen(true)} className="shadow-sm hover:shadow-md transition-all bg-gradient-to-r from-primary to-primary/80">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Task
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="overflow-hidden border border-border/50 shadow-sm h-[calc(100vh-300px)]">
+            <div className="w-full h-full overflow-hidden">
+              <FullScreenCalendar 
+                data={calendarData}
+                onEventClick={handleEventClick} 
+                onDateClick={handleDateClick}
+                onNewEventClick={() => setIsCreateTaskModalOpen(true)}
+              />
             </div>
-          </CardContent>
-        </Card>
-      ) : calendarEvents.length === 0 ? (
-        <Card className="h-[calc(100vh-200px)] bg-card/60 backdrop-blur-sm border-primary/10">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-              No scheduled tasks
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center h-64 p-6">
-            <p className="text-muted-foreground mb-6 text-center">
-              Your calendar is empty. Create your first task to see it on the calendar.
-            </p>
-            <Button onClick={() => setIsCreateTaskModalOpen(true)} className="shadow-sm hover:shadow-md transition-all">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Task
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="w-full h-[calc(100vh-180px)] min-h-[700px] overflow-hidden rounded-xl shadow-sm border border-border/50">
-          <CalendarView 
-            events={calendarEvents} 
-            onEventClick={handleEventClick} 
-            onDateClick={handleDateClick}
-          />
-        </div>
-      )}
+          </Card>
+        )}
+      </div>
 
       {/* Create Task Modal */}
       <Dialog open={isCreateTaskModalOpen} onOpenChange={setIsCreateTaskModalOpen}>
@@ -155,6 +235,9 @@ const Calendar = () => {
                 ? `Create Task for ${format(selectedDate, 'PPP')}` 
                 : 'Create New Task'}
             </DialogTitle>
+            <DialogDescription>
+              Add a new task to your calendar
+            </DialogDescription>
           </DialogHeader>
           <div>
             <CreateTaskModal 

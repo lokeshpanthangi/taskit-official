@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
@@ -15,7 +15,7 @@ const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -108,9 +108,9 @@ const Register = () => {
       <div className="text-center">
         <p className="text-sm text-muted-foreground">
           Already have an account?{" "}
-          <a href="/login" className="text-primary hover:underline">
+          <Link to="/login" className="text-primary hover:underline">
             Sign in
-          </a>
+          </Link>
         </p>
       </div>
     </div>

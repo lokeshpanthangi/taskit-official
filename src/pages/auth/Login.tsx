@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
@@ -13,7 +13,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -59,12 +59,12 @@ const Login = () => {
             <label htmlFor="password" className="text-sm font-medium leading-none">
               Password
             </label>
-            <a
-              href="/forgot-password"
+            <Link
+              to="/forgot-password"
               className="text-sm font-medium text-primary hover:underline"
             >
               Forgot password?
-            </a>
+            </Link>
           </div>
           <Input
             id="password"
@@ -85,9 +85,9 @@ const Login = () => {
       <div className="text-center">
         <p className="text-sm text-muted-foreground">
           Don't have an account?{" "}
-          <a href="/register" className="text-primary hover:underline">
+          <Link to="/register" className="text-primary hover:underline">
             Sign up
-          </a>
+          </Link>
         </p>
       </div>
     </div>
