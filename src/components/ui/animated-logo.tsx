@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 interface AnimatedLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -15,30 +16,17 @@ export function AnimatedLogo({
   className 
 }: AnimatedLogoProps) {
   const { isAuthenticated } = useAuth();
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [hasAnimated, setHasAnimated] = useState(false);
+  const location = useLocation();
+  const [isAnimating, setIsAnimating] = useState(true);
   
-  // Trigger animation once after login
+  // Trigger animation once when page changes
   useEffect(() => {
-    if (isAuthenticated && !hasAnimated) {
-      setIsAnimating(true);
-      setHasAnimated(true);
-    }
-  }, [isAuthenticated, hasAnimated]);
-  
-  // Keep animation continuous after login
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setIsAnimating(false);
-      setHasAnimated(false);
-      return;
-    }
+    // Start animation on page change
+    setIsAnimating(true);
     
-    // If already authenticated and has animated, keep animation continuous
-    if (isAuthenticated && hasAnimated) {
-      setIsAnimating(true);
-    }
-  }, [isAuthenticated, hasAnimated]);
+    // No need to set it to false as we want it to stay in the final animated state
+    // We're not using a timeout anymore since we want it to always show the final state
+  }, [location.pathname]); // Re-run effect when path changes
   
   const sizeClasses = {
     sm: 'h-8 w-8',
@@ -103,14 +91,13 @@ export function AnimatedLogo({
           sizeClasses[size]
         )}
         variants={containerVariants}
-        animate={isAnimating ? 'hover' : 'initial'}
-        onClick={() => setIsAnimating(true)}
+        animate={'hover'}
       >
         <motion.div
           className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.15),transparent_70%)] opacity-0"
           animate={{ 
-            opacity: isAnimating ? 0.8 : 0,
-            scale: isAnimating ? 1.2 : 1
+            opacity: 0.8,
+            scale: 1.2
           }}
           transition={{ duration: 0.5 }}
         />
@@ -119,7 +106,7 @@ export function AnimatedLogo({
           viewBox="0 0 24 24"
           className="w-2/3 h-2/3 text-primary-foreground"
           initial="initial"
-          animate={isAnimating ? 'animate' : 'initial'}
+          animate={'animate'}
         >
           {/* Circle background */}
           <motion.circle
@@ -150,7 +137,7 @@ export function AnimatedLogo({
           className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/80"
           style={{ fontSize: size === 'sm' ? '1rem' : size === 'md' ? '1.25rem' : size === 'lg' ? '1.5rem' : '1.75rem' }}
           initial="initial"
-          animate={isAnimating ? 'animate' : 'initial'}
+          animate={'animate'}
           variants={textVariants}
         >
           TaskPal

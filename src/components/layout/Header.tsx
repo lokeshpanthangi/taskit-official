@@ -69,11 +69,8 @@ const Header = () => {
           </Button>
         </SidebarTrigger>
 
-        {/* Title/Logo Area (left side) */}
+        {/* Empty space for layout balance */}
         <div className="flex-1">
-          <Link to="/dashboard" className="md:flex items-center hidden">
-            <AnimatedLogo size="sm" showText={true} />
-          </Link>
         </div>
 
         {/* User actions moved to the right end */}
