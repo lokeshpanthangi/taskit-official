@@ -200,13 +200,13 @@ export function FullScreenCalendar({
       <div className="lg:flex lg:flex-auto lg:flex-col overflow-hidden">
         {/* Week Days Header */}
         <div className="grid grid-cols-7 border text-center text-sm font-semibold leading-6 lg:flex-none sticky top-0 bg-background z-10">
-          <div className="border-r py-2.5 font-medium">Sun</div>
-          <div className="border-r py-2.5 font-medium">Mon</div>
-          <div className="border-r py-2.5 font-medium">Tue</div>
-          <div className="border-r py-2.5 font-medium">Wed</div>
-          <div className="border-r py-2.5 font-medium">Thu</div>
-          <div className="border-r py-2.5 font-medium">Fri</div>
-          <div className="py-2.5 font-medium">Sat</div>
+          <div className="border-r py-2.5 font-medium flex justify-center">Sun</div>
+          <div className="border-r py-2.5 font-medium flex justify-center">Mon</div>
+          <div className="border-r py-2.5 font-medium flex justify-center">Tue</div>
+          <div className="border-r py-2.5 font-medium flex justify-center">Wed</div>
+          <div className="border-r py-2.5 font-medium flex justify-center">Thu</div>
+          <div className="border-r py-2.5 font-medium flex justify-center">Fri</div>
+          <div className="py-2.5 font-medium flex justify-center">Sat</div>
         </div>
 
         {/* Calendar Days */}
@@ -224,22 +224,24 @@ export function FullScreenCalendar({
                     "text-muted-foreground opacity-50"
                 )}
               >
-                <time
-                  dateTime={format(day, "yyyy-MM-dd")}
-                  className={cn(
-                    "ml-auto flex size-6 items-center justify-center rounded-full",
-                    isEqual(day, selectedDay) &&
-                      isToday(day) &&
-                      "bg-primary text-primary-foreground",
-                    isEqual(day, selectedDay) &&
-                      !isToday(day) &&
-                      "bg-primary text-primary-foreground",
-                    isToday(day) && !isEqual(day, selectedDay) &&
-                      "bg-accent/50 text-accent-foreground font-bold"
-                  )}
-                >
+                <div className="flex justify-center w-full">
+                  <time
+                    dateTime={format(day, "yyyy-MM-dd")}
+                    className={cn(
+                      "flex size-6 items-center justify-center rounded-full",
+                      isEqual(day, selectedDay) &&
+                        isToday(day) &&
+                        "bg-primary text-primary-foreground",
+                      isEqual(day, selectedDay) &&
+                        !isToday(day) &&
+                        "bg-primary text-primary-foreground",
+                      isToday(day) && !isEqual(day, selectedDay) &&
+                        "bg-accent/50 text-accent-foreground font-bold"
+                    )}
+                  >
                   {format(day, "d")}
-                </time>
+                  </time>
+                </div>
                 {data.filter((date) => isSameDay(date.day, day)).length > 0 && (
                   <div className="mt-2 space-y-1 max-h-[6rem] overflow-y-auto">
                     {data

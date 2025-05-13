@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useState } from "react";
 import CreateProjectModal from "@/components/projects/CreateProjectModal";
 import { useProjects } from "@/hooks/useProjects";
+import { AnimatedLogo } from "@/components/ui/animated-logo";
 
 const Sidebar = () => {
   const { user } = useAuth();
@@ -50,12 +51,7 @@ const Sidebar = () => {
   return (
     <SidebarContainer>
       <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center text-primary-foreground font-bold animate-pulse">
-            TP
-          </div>
-          <h1 className="text-xl font-semibold">TaskPal</h1>
-        </div>
+        <AnimatedLogo size="md" />
       </SidebarHeader>
       <div className="flex flex-col items-center py-2">
         <span className="text-base font-medium">

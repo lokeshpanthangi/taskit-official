@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { AnimatedLogo } from "@/components/ui/animated-logo";
 
 const NotFound = () => {
   const location = useLocation();
@@ -17,6 +18,9 @@ const NotFound = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center space-y-6 max-w-md px-6">
+        <div className="mx-auto flex justify-center mb-4">
+          <AnimatedLogo size="md" />
+        </div>
         <div className="mx-auto w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
           <span className="text-4xl text-primary">404</span>
         </div>

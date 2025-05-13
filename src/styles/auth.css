@@ -1,0 +1,25 @@
+/* Auth pages specific styles */
+.auth-page {
+  --auth-accent: 50 98% 60%;
+  --auth-accent-foreground: 222 47% 11%;
+}
+
+.auth-page .gradient-bar {
+  background: linear-gradient(to right, hsl(199, 89%, 48%), hsl(50, 98%, 60%), hsl(199, 89%, 48%));
+}
+
+.auth-page .accent-text {
+  color: hsl(50, 98%, 60%);
+}
+
+.auth-page .accent-bg {
+  background-color: hsl(50, 98%, 60%, 0.1);
+}
+
+.auth-page .accent-border {
+  border-color: hsl(50, 98%, 60%, 0.3);
+}
+
+.auth-page .accent-hover:hover {
+  background-color: hsl(50, 98%, 60%, 0.1);
+}

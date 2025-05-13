@@ -36,6 +36,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 // Theme CSS
 import "./styles/themes.css";
+import "./styles/auth.css";
 
 const queryClient = new QueryClient({
   defaultOptions: {

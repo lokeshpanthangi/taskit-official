@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 import { UserPlus, ArrowRight, Eye, EyeOff, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AnimatedLogo } from "@/components/ui/animated-logo";
 
 const Register = () => {
   const [email, setEmail] = useState("");
@@ -97,11 +98,11 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden auth-page">
       {/* Animated background elements */}
       <div className="fixed inset-0 overflow-hidden -z-10">
-        <div className="absolute top-[20%] right-[25%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute bottom-[20%] left-[25%] w-[50%] h-[50%] rounded-full bg-accent/5 blur-3xl" />
+        <div className="absolute top-[20%] left-[50%] -translate-x-1/2 w-[70%] h-[50%] rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute bottom-[20%] left-[50%] -translate-x-1/2 w-[70%] h-[50%] rounded-full accent-bg blur-3xl" />
       </div>
 
       {/* Logo */}
@@ -112,17 +113,8 @@ const Register = () => {
         transition={{ duration: 0.5 }}
       >
         <Link to="/" className="flex items-center space-x-2 group">
-          <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold shadow-lg shadow-primary/20 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-primary/30">
-            <motion.span
-              initial={{ scale: 1 }}
-              whileHover={{ scale: 1.1 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
-            >
-              TP
-            </motion.span>
-          </div>
+          <AnimatedLogo size="lg" />
         </Link>
-        <h1 className="mt-4 text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">TaskPal</h1>
       </motion.div>
 
       <motion.div 
@@ -320,7 +312,7 @@ const Register = () => {
         </div>
 
         {/* Decorative bottom gradient bar */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-primary via-accent to-primary" />
+        <div className="h-1.5 w-full gradient-bar" />
       </motion.div>
 
       {/* Back to home link */}

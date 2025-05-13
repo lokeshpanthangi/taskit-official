@@ -16,10 +16,11 @@ import NotificationHeader from "./NotificationHeader";
 import { getCurrentUser, signOut } from "@/services/authService";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
+import { AnimatedLogo } from "@/components/ui/animated-logo";
 
 const Header = () => {
   const { user: authUser, logout } = useAuth();
@@ -70,7 +71,9 @@ const Header = () => {
 
         {/* Title/Logo Area (left side) */}
         <div className="flex-1">
-          {/* You can add a logo or title here if needed */}
+          <Link to="/dashboard" className="md:flex items-center hidden">
+            <AnimatedLogo size="sm" showText={true} />
+          </Link>
         </div>
 
         {/* User actions moved to the right end */}

@@ -8,6 +8,8 @@ import { CheckCircle, Clock, Calendar, Star, ArrowRight, ChevronRight } from "lu
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { AnimatedLogo } from "@/components/ui/animated-logo";
 
 const Landing = () => {
   const { isAuthenticated } = useAuth();
@@ -99,23 +101,18 @@ const Landing = () => {
         transition={{ duration: 0.5 }}
       >
         <Link to="/" className="flex items-center space-x-2 group">
-          <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold shadow-lg shadow-primary/20 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-primary/30">
-            <motion.span
-              initial={{ scale: 1 }}
-              whileHover={{ scale: 1.1 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
-            >
-              TP
-            </motion.span>
-          </div>
-          <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">TaskPal</span>
+          <AnimatedLogo size="md" showText={true} />
         </Link>
         
-        <div className="flex space-x-4">
+        <div className="flex space-x-4 items-center">
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button variant="ghost" asChild className="rounded-lg px-5 font-medium">
               <Link to="/login">Log in</Link>
             </Button>
+          </motion.div>
+          
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <ThemeToggle />
           </motion.div>
           
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -387,11 +384,8 @@ const Landing = () => {
       {/* Footer */}
       <footer className="container mx-auto py-10 px-4 border-t">
         <div className="flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center space-x-2 mb-4 md:mb-0">
-            <div className="h-8 w-8 rounded-xl bg-primary/20 flex items-center justify-center text-primary font-bold">
-              TP
-            </div>
-            <span className="text-lg font-semibold">TaskPal</span>
+          <div className="flex items-center mb-4 md:mb-0">
+            <AnimatedLogo size="sm" showText={true} />
           </div>
           
           <p className="text-sm text-muted-foreground mb-4 md:mb-0 md:order-last">
