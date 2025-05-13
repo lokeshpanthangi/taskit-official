@@ -282,4 +282,4 @@ MIT
 
 ---
 
-> Made with ❤️ for productivity!
+> Made with ❤️ from Nani!
