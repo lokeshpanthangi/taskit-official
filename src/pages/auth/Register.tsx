@@ -100,8 +100,8 @@ const Register = () => {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="fixed inset-0 overflow-hidden -z-10">
-        <div className="absolute top-0 left-0 w-[70%] h-[70%] rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-[70%] h-[70%] rounded-full bg-accent/5 blur-3xl" />
+        <div className="absolute top-[20%] right-[25%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute bottom-[20%] left-[25%] w-[50%] h-[50%] rounded-full bg-accent/5 blur-3xl" />
       </div>
 
       {/* Logo */}

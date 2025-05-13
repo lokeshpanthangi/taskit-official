@@ -101,8 +101,18 @@ const ProjectCard = ({ project, teamMembers = [], taskCount }: ProjectCardProps)
             <div>
               <h3 className="text-sm font-medium mb-2">Progress</h3>
               <div className="flex items-center space-x-2">
-                <Progress value={project.progress} className="h-2" />
-                <span className="text-sm font-medium">{project.progress}%</span>
+                {/* Calculate progress based on completed tasks */}
+                {taskCount && taskCount.total > 0 ? (
+                  <>
+                    <Progress value={Math.round((taskCount.completed / taskCount.total) * 100)} className="h-2" />
+                    <span className="text-sm font-medium">{Math.round((taskCount.completed / taskCount.total) * 100)}%</span>
+                  </>
+                ) : (
+                  <>
+                    <Progress value={0} className="h-2" />
+                    <span className="text-sm font-medium">0%</span>
+                  </>
+                )}
               </div>
               <div className="mt-4 flex items-center space-x-2 text-sm text-muted-foreground">
                 <span>

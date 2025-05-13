@@ -88,7 +88,7 @@ const NotificationCenter = ({
               <DropdownMenuItem
                 key={notification.id}
                 className={cn(
-                  "p-3 cursor-pointer flex flex-col items-start gap-1",
+                  "p-3 cursor-pointer flex flex-col items-start gap-1 hover:bg-background/80 hover:shadow-sm",
                   !notification.read && "bg-muted/50"
                 )}
                 onClick={() => handleNotificationClick(notification)}
