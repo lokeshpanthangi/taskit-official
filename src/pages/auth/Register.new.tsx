@@ -156,7 +156,7 @@ const Register = () => {
                     id="firstName"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    placeholder=""
+                    placeholder="John"
                     required
                     className="h-12 rounded-xl border-border/60 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300"
                   />
@@ -170,7 +170,7 @@ const Register = () => {
                     id="lastName"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    placeholder=""
+                    placeholder="Doe"
                     required
                     className="h-12 rounded-xl border-border/60 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300"
                   />
@@ -186,7 +186,7 @@ const Register = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder=""
+                  placeholder="name@example.com"
                   required
                   autoComplete="email"
                   className="h-12 rounded-xl border-border/60 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300"
@@ -203,7 +203,7 @@ const Register = () => {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder=""
+                    placeholder="u2022u2022u2022u2022u2022u2022u2022u2022"
                     required
                     autoComplete="new-password"
                     className="h-12 rounded-xl border-border/60 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 pr-10"

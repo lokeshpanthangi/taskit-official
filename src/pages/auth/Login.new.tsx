@@ -115,7 +115,7 @@ const Login = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder=""
+                  placeholder="name@example.com"
                   required
                   autoComplete="email"
                   className="h-12 rounded-xl border-border/60 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300"
@@ -140,7 +140,7 @@ const Login = () => {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder=""
+                    placeholder="••••••••"
                     required
                     autoComplete="current-password"
                     className="h-12 rounded-xl border-border/60 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 pr-10"
