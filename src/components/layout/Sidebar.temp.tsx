@@ -84,7 +84,7 @@ const Sidebar = () => {
                         "sidebar-item transition-all duration-200",
                         isActive && "sidebar-item active",
                         isActive && "font-medium",
-                        isActive && theme === "light" ? "bg-primary/10 text-primary shadow-neon-blue-sm" : "",
+                        isActive && theme === "light" ? "bg-accent/40 text-primary shadow-neon-blue-sm" : "",
                         isActive && theme === "dark" ? "bg-primary/20 text-foreground shadow-neon-blue-sm" : ""
                       )
                     }}
@@ -140,7 +140,7 @@ const Sidebar = () => {
                           "sidebar-item transition-all duration-200",
                           isActive && "sidebar-item active",
                           isActive && "font-medium",
-                          isActive && theme === "light" ? "bg-primary/10 text-primary shadow-neon-blue-sm" : "",
+                          isActive && theme === "light" ? "bg-accent/40 text-primary shadow-neon-blue-sm" : "",
                           isActive && theme === "dark" ? "bg-primary/20 text-foreground shadow-neon-blue-sm" : ""
                         )
                       }}
@@ -162,8 +162,8 @@ const Sidebar = () => {
           className={({ isActive }) => {
             return cn(
               "flex items-center gap-2 py-2 px-3 rounded-md transition-all duration-200",
-              isActive ? (theme === "dark" ? "bg-primary/20 font-medium shadow-neon-blue-sm" : "bg-primary/10 font-medium shadow-neon-blue-sm") : "hover:bg-primary/10",
-              isActive && theme === "light" ? "bg-primary/10 text-primary shadow-neon-blue-sm" : "",
+              isActive ? (theme === "dark" ? "bg-primary/20 font-medium shadow-neon-blue-sm" : "bg-accent font-medium shadow-neon-blue-sm") : "hover:bg-primary/10",
+              isActive && theme === "light" ? "bg-accent/40 text-primary shadow-neon-blue-sm" : "",
               isActive && theme === "dark" ? "bg-primary/20 text-foreground shadow-neon-blue-sm" : ""
             )
           }}

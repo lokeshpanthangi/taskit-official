@@ -21,6 +21,7 @@ import Dashboard from "./pages/app/Dashboard";
 import Tasks from "./pages/app/Tasks";
 import Calendar from "./pages/app/Calendar";
 import Projects from "./pages/app/Projects";
+import ProjectDetails from "./pages/app/ProjectDetails";
 import Settings from "./pages/app/Settings";
 
 // Layouts
@@ -71,6 +72,7 @@ const App = () => (
                 <Route path="/tasks" element={<Tasks />} />
                 <Route path="/calendar" element={<Calendar />} />
                 <Route path="/projects" element={<Projects />} />
+                <Route path="/projects/:projectId" element={<ProjectDetails />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>
               

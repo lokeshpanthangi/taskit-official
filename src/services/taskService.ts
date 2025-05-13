@@ -397,6 +397,26 @@ export const deleteSubtask = async (subtaskId: string) => {
   return true;
 };
 
+export const fetchTasksByProject = async (projectId: string) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error("User not authenticated");
+  
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("project_id", projectId)
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+    
+  if (error) {
+    console.error("Error fetching project tasks:", error);
+    throw error;
+  }
+  
+  return data as Task[];
+};
+
 export const buildTaskHierarchy = (allTasks: Task[]) => {
   const taskMap = new Map<string, Task>();
   const rootTasks: Task[] = [];

@@ -151,21 +151,56 @@ const TaskDetailPanel = ({ taskId, onClose }: TaskDetailPanelProps) => {
       
       // Fetch child tasks
       const fetchChildTasks = async () => {
+        if (!taskId) return;
+        
         try {
-          const { data: childTasksData, error } = await supabase
-            .from("tasks")
-            .select("*")
-            .eq("parent_id", taskId);
-            
+          const { data, error } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('parent_id', taskId);
+          
+          if (error) {
+            console.error('Error fetching child tasks:', error);
+            return;
+          }
+          
+          if (data) {
+            setChildTasks(data);
+          }
+        } catch (error) {
+          console.error('Error fetching child tasks:', error);
+        }
+      };
+
+      // Convert subtask to main task
+      const convertToMainTask = async (subtaskId: string) => {
+        try {
+          // Update the subtask to remove parent_id
+          const { error } = await supabase
+            .from('subtasks')
+            .update({ parent_id: null })
+            .eq('id', subtaskId);
+
           if (error) throw error;
           
-          // Map the Supabase response to ensure TaskStatus compatibility
-          const formattedChildTasks: TaskData[] = (childTasksData || []).map(childTask => ({
-            ...childTask,
-            status: childTask.status as TaskStatus
-          }));
+          // Create a new main task with the same title
+          const subtask = subtasks?.find(s => s.id === subtaskId);
+          if (!subtask) return;
+
+          await createTask({
+            title: subtask.title,
+            status: 'Not Started',
+            priority: task?.priority || 0,
+            user_id: task?.user_id,
+            project_id: task?.project_id
+          });
+
+          // Delete the subtask
+          await deleteSubtask(subtaskId);
           
-          setChildTasks(formattedChildTasks);
+          queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] });
+          queryClient.invalidateQueries({ queryKey: ['tasks'] });
+          toast.success('Subtask converted to main task');
         } catch (error) {
           console.error("Error fetching child tasks:", error);
           toast.error("Error loading child tasks");
@@ -475,16 +510,26 @@ const TaskDetailPanel = ({ taskId, onClose }: TaskDetailPanelProps) => {
               <ul className="space-y-2">
                 {subtasks && subtasks.length > 0 ? (
                   subtasks.map((subtask) => (
-                    <li key={subtask.id} className="flex items-center gap-2">
-                      <input 
-                        type="checkbox" 
-                        checked={subtask.completed} 
-                        onChange={() => handleSubtaskToggle(subtask.id, !subtask.completed)}
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                      />
-                      <span className={`text-sm ${subtask.completed ? "line-through text-muted-foreground" : ""}`}>
-                        {subtask.title}
-                      </span>
+                    <li key={subtask.id} className="flex items-center justify-between gap-2 group">
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={subtask.completed} 
+                          onChange={() => handleSubtaskToggle(subtask.id, !subtask.completed)}
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                        <span className={`text-sm ${subtask.completed ? "line-through text-muted-foreground" : ""}`}>
+                          {subtask.title}
+                        </span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => convertToMainTask(subtask.id)}
+                      >
+                        <span className="text-xs">Move to Main</span>
+                      </Button>
                     </li>
                   ))
                 ) : (

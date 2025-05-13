@@ -1,10 +1,11 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Edit, Trash, MoreHorizontal } from "lucide-react";
+import { Edit, Trash, MoreHorizontal, ExternalLink } from "lucide-react";
 import { Project, deleteProject } from "@/services/projectService";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/components/ui/sonner";
@@ -33,6 +34,7 @@ const ProjectCard = ({ project, teamMembers = [], taskCount }: ProjectCardProps)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Delete project mutation
   const deleteProjectMutation = useMutation({
@@ -54,7 +56,15 @@ const ProjectCard = ({ project, teamMembers = [], taskCount }: ProjectCardProps)
 
   return (
     <>
-      <Card className="overflow-hidden gradient-border bg-card hover:shadow-lg transition-shadow">
+      <Card 
+        className="overflow-hidden gradient-border bg-card hover:shadow-neon-blue-glow transition-shadow cursor-pointer"
+        onClick={(e) => {
+          // Prevent navigation if clicking on dropdown or buttons
+          if (!(e.target as HTMLElement).closest('.dropdown-trigger')) {
+            navigate(`/projects/${project.id}`);
+          }
+        }}
+      >
         <CardHeader className="bg-muted/30">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div>
@@ -66,7 +76,7 @@ const ProjectCard = ({ project, teamMembers = [], taskCount }: ProjectCardProps)
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="dropdown-trigger">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>

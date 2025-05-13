@@ -79,6 +79,13 @@ export default {
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
 			},
+			boxShadow: {
+				'neon-blue': '0 0 5px #4361ee, 0 0 10px #4361ee, 0 0 15px #4361ee',
+				'neon-blue-sm': '0 0 2px #4361ee, 0 0 5px #4361ee',
+				'neon-blue-xs': '0 0 1px #4361ee, 0 0 3px #4361ee',
+				'neon-blue-lg': '0 0 7px #4361ee, 0 0 15px #4361ee, 0 0 25px #4361ee',
+				'neon-blue-glow': '0 0 10px rgba(67, 97, 238, 0.5), 0 0 20px rgba(67, 97, 238, 0.3)'
+			},
 			keyframes: {
 				'accordion-down': {
 					from: { height: '0', opacity: '0' },

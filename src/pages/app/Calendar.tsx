@@ -62,19 +62,26 @@ const Calendar = () => {
     if (!tasks) return { calendarEvents: [], calendarData: [] };
     
     // For the original CalendarView component
-    const calendarEvents: CalendarEvent[] = tasks.map(task => ({
-      id: task.id,
-      title: task.title,
-      date: task.due_date || new Date().toISOString(),
-      priority: task.priority || 0,
-      status: task.status || 'Not Started'
-    }));
+    const calendarEvents: CalendarEvent[] = tasks
+      .filter(task => task.due_date) // Only include tasks with due dates
+      .map(task => ({
+        id: task.id,
+        title: task.title,
+        date: task.due_date!,
+        priority: task.priority || 0,
+        status: task.status || 'Not Started'
+      }));
   
     // For the FullScreenCalendar component
     const calendarData = tasks.reduce<CalendarDataItem[]>((acc, task) => {
       if (!task.due_date) return acc;
       
+      // Ensure we're working with a proper Date object
       const dueDate = new Date(task.due_date);
+      
+      // Skip invalid dates
+      if (isNaN(dueDate.getTime())) return acc;
+      
       const dateKey = format(dueDate, 'yyyy-MM-dd');
       
       // Find if we already have an entry for this date
