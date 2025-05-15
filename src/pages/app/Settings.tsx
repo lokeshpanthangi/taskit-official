@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/components/ui/sonner";
 import { useTheme } from "next-themes";
+import GoogleCalendarSettings from "@/components/integrations/GoogleCalendarSettings";
 
 const Settings = () => {
   const { user } = useAuth();
@@ -121,6 +122,7 @@ const Settings = () => {
           <TabsTrigger value="notifications" className="animate-pop [animation-delay:50ms]">Notifications</TabsTrigger>
           <TabsTrigger value="appearance" className="animate-pop [animation-delay:100ms]">Appearance</TabsTrigger>
           <TabsTrigger value="security" className="animate-pop [animation-delay:150ms]">Security</TabsTrigger>
+          <TabsTrigger value="integrations" className="animate-pop [animation-delay:200ms]">Integrations</TabsTrigger>
         </TabsList>
         
         {/* Profile Tab */}
@@ -539,6 +541,18 @@ const Settings = () => {
               </Button>
             </CardFooter>
           </Card>
+        </TabsContent>
+        
+        {/* Integrations Tab */}
+        <TabsContent value="integrations">
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium">External Integrations</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Connect TaskIt with other services to enhance your productivity
+            </p>
+            
+            <GoogleCalendarSettings />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

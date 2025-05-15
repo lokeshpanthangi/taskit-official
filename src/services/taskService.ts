@@ -126,6 +126,21 @@ export const createTask = async (task: Omit<Task, "id" | "user_id" | "created_at
     throw error;
   }
   
+  // Check if we should auto-sync with Google Calendar
+  try {
+    const settingsJson = localStorage.getItem('googleCalendarSettings');
+    if (settingsJson) {
+      const settings = JSON.parse(settingsJson);
+      if (settings.syncNewTasks) {
+        // Import is here to avoid circular dependency
+        const { autoSyncNewTask } = await import('./taskCalendarService');
+        autoSyncNewTask(data as Task);
+      }
+    }
+  } catch (e) {
+    console.error('Error auto-syncing task with Google Calendar:', e);
+  }
+  
   return data as Task;
 };
 
@@ -143,6 +158,21 @@ export const updateTask = async (taskId: string, updates: Partial<Task>) => {
   if (error) {
     console.error("Error updating task:", error);
     throw error;
+  }
+  
+  // Check if we should sync updates with Google Calendar
+  try {
+    const settingsJson = localStorage.getItem('googleCalendarSettings');
+    if (settingsJson) {
+      const settings = JSON.parse(settingsJson);
+      if (settings.syncTaskUpdates) {
+        // Import is here to avoid circular dependency
+        const { updateTaskInCalendar } = await import('./taskCalendarService');
+        updateTaskInCalendar(data as Task);
+      }
+    }
+  } catch (e) {
+    console.error('Error syncing task update with Google Calendar:', e);
   }
   
   return data as Task;
@@ -204,16 +234,31 @@ export const deleteTask = async (taskId: string) => {
     throw subtasksError;
   }
   
-  // Finally delete the task
-  const { error } = await supabase
+  // Check if we should sync deletions with Google Calendar
+  try {
+    const settingsJson = localStorage.getItem('googleCalendarSettings');
+    if (settingsJson) {
+      const settings = JSON.parse(settingsJson);
+      if (settings.syncTaskDeletions) {
+        // Import is here to avoid circular dependency
+        const { removeTaskFromCalendar } = await import('./taskCalendarService');
+        await removeTaskFromCalendar(taskId);
+      }
+    }
+  } catch (e) {
+    console.error('Error syncing task deletion with Google Calendar:', e);
+  }
+  
+  // Delete the task
+  const { error: deleteError } = await supabase
     .from("tasks")
     .delete()
     .eq("id", taskId)
     .eq("user_id", user.id);
     
-  if (error) {
-    console.error("Error deleting task:", error);
-    throw error;
+  if (deleteError) {
+    console.error("Error deleting task:", deleteError);
+    throw deleteError;
   }
   
   return true;

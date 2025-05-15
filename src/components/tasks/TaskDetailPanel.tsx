@@ -3,6 +3,7 @@ import { X, Star, Calendar, CheckCircle, Edit, Trash, Save } from "lucide-react"
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Progress } from "@/components/ui/progress";
+import SyncTaskButton from "@/components/integrations/SyncTaskButton";
 import {
   fetchTask,
   fetchSubtasks, 
@@ -365,6 +366,9 @@ const TaskDetailPanel = ({ taskId, onClose }: TaskDetailPanelProps) => {
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Project</span>
                   <span className="text-sm font-medium">{task.project || "No project"}</span>
+                </div>
+                <div className="flex flex-col gap-2 mt-2">
+                  <SyncTaskButton task={task} />
                 </div>
                 {task.parent_id && (
                   <div className="flex justify-between">
