@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useGoogleCalendar } from '@/contexts/GoogleCalendarContext';
 import { Loader2, Calendar, Check, X } from 'lucide-react';
+import { useTasks } from '@/hooks/useTasks';
 
 const GoogleCalendarSettings: React.FC = () => {
   const {
@@ -19,6 +20,9 @@ const GoogleCalendarSettings: React.FC = () => {
   const [syncTaskUpdates, setSyncTaskUpdates] = React.useState<boolean>(false);
   const [syncTaskDeletions, setSyncTaskDeletions] = React.useState<boolean>(false);
   const [notifyOnCalendarEvents, setNotifyOnCalendarEvents] = React.useState<boolean>(true);
+  const [isSyncingAll, setIsSyncingAll] = useState(false);
+  const [saveAnim, setSaveAnim] = useState(false);
+  const { tasks } = useTasks();
   
   const handleSaveSettings = () => {
     // Save settings to local storage or database
@@ -30,6 +34,28 @@ const GoogleCalendarSettings: React.FC = () => {
     };
     
     localStorage.setItem('googleCalendarSettings', JSON.stringify(settings));
+    setSaveAnim(true);
+    setTimeout(() => setSaveAnim(false), 400); // Animation duration
+  };
+  
+  const handleSyncAllTasks = async () => {
+    if (!isConnected) {
+      return;
+    }
+    setIsSyncingAll(true);
+    try {
+      // Dynamically import to avoid circular dependency
+      const { syncTaskToCalendar } = await import('@/services/taskCalendarService');
+      if (tasks && tasks.length > 0) {
+        for (const task of tasks) {
+          await syncTaskToCalendar(task);
+        }
+      }
+    } catch (error) {
+      console.error('Error syncing all tasks:', error);
+    } finally {
+      setIsSyncingAll(false);
+    }
   };
   
   // Load settings from local storage
@@ -170,9 +196,21 @@ const GoogleCalendarSettings: React.FC = () => {
         )}
       </CardContent>
       
-      <CardFooter className="border-t px-6 py-4">
-        <Button onClick={handleSaveSettings} disabled={!isConnected}>
+      <CardFooter className="border-t px-6 py-4 flex gap-2">
+        <Button 
+          onClick={handleSaveSettings} 
+          disabled={!isConnected}
+          className={saveAnim ? 'animate-pulse scale-105' : ''}
+        >
           Save settings
+        </Button>
+        <Button 
+          onClick={handleSyncAllTasks} 
+          disabled={!isConnected || isSyncingAll}
+          variant="outline"
+          className={isSyncingAll ? 'animate-pulse' : ''}
+        >
+          {isSyncingAll ? 'Syncing...' : 'Sync All Tasks'}
         </Button>
       </CardFooter>
     </Card>

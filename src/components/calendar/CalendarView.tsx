@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday } from 'date-fns';
+import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, getDay } from 'date-fns';
 
 export interface CalendarEvent {
   id: string;
@@ -55,6 +54,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, onEventClick, onDat
     start: startOfMonth(currentMonth),
     end: endOfMonth(currentMonth)
   });
+
+  // Calculate the number of empty cells before the first day
+  const firstDayOfWeek = getDay(startOfMonth(currentMonth));
+  const leadingEmptyCells = Array.from({ length: firstDayOfWeek });
 
   // Custom day renderer for calendar
   const renderDay = (date: Date, index: number) => {
@@ -144,7 +147,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, onEventClick, onDat
               {day}
             </div>
           ))}
-          
+          {/* Add empty cells for alignment */}
+          {leadingEmptyCells.map((_, idx) => (
+            <div key={`empty-${idx}`} className="" />
+          ))}
           {daysInMonth.map((day, i) => (
             <div 
               key={i} 

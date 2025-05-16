@@ -47,9 +47,25 @@ export const syncTaskToCalendar = async (task: Task): Promise<string | null> => 
     }
     const existingEventId = getEventIdForTask(task.id);
     if (existingEventId) {
-      await updateCalendarEvent(existingEventId, task);
-      console.log('Updated calendar event for task:', task.id);
-      return existingEventId;
+      try {
+        await updateCalendarEvent(existingEventId, task);
+        console.log('Updated calendar event for task:', task.id);
+        return existingEventId;
+      } catch (error: any) {
+        // If update fails with 404, remove the event ID and try to create a new event
+        if (error.message && error.message.includes('Failed to update event')) {
+          removeEventIdForTask(task.id);
+          // Try to create a new event
+          const eventId = await createCalendarEvent(task);
+          if (eventId) {
+            setEventIdForTask(task.id, eventId);
+            console.log('Created calendar event for task after failed update:', task.id);
+          }
+          return eventId;
+        } else {
+          throw error;
+        }
+      }
     } else {
       const eventId = await createCalendarEvent(task);
       if (eventId) {

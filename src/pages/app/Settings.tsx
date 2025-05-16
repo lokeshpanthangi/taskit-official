@@ -1,9 +1,8 @@
-
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -11,6 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/components/ui/sonner";
 import { useTheme } from "next-themes";
 import GoogleCalendarSettings from "@/components/integrations/GoogleCalendarSettings";
+import { supabase } from '@/integrations/supabase/client';
+import { updateUserProfile } from '@/services/authService';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -20,7 +21,17 @@ const Settings = () => {
   // Profile form state
   const [name, setName] = useState(user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : "");
   const [email, setEmail] = useState(user?.email || "");
-  const [bio, setBio] = useState("");
+  const [bio, setBio] = useState(user?.bio || "");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || "");
+  
+  // On mount, initialize bio and avatarUrl from user
+  useEffect(() => {
+    if (user) {
+      setBio(user.bio || "");
+      setAvatarUrl(user.avatar_url || "");
+    }
+  }, [user]);
   
   // Notification settings state
   const [notifyTaskDue, setNotifyTaskDue] = useState(true);
@@ -43,12 +54,46 @@ const Settings = () => {
   const [inactivityTimeout, setInactivityTimeout] = useState("60");
   
   // Save functions for each section
-  const handleSaveProfile = () => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setAvatarFile(file);
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from("avatars")
+      .upload(`${user.id}/${file.name}`, file, { upsert: true });
+    if (error) {
+      toast.error("Failed to upload avatar");
+      return;
+    }
+    // Get public URL
+    const { data: publicUrlData } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(`${user.id}/${file.name}`);
+    if (publicUrlData?.publicUrl) {
+      setAvatarUrl(publicUrlData.publicUrl);
+      toast.success("Avatar uploaded!");
+    }
+  };
+  
+  const handleSaveProfile = async () => {
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      // Split name into first and last
+      const [first_name, ...rest] = name.split(" ");
+      const last_name = rest.join(" ");
+      await updateUserProfile({
+        first_name,
+        last_name,
+        bio,
+        avatar_url: avatarUrl,
+      });
       toast.success("Profile updated successfully");
-    }, 1000);
+    } catch (e) {
+      toast.error("Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
   };
   
   const handleSaveNotifications = () => {
@@ -109,6 +154,15 @@ const Settings = () => {
     setSelectedTheme(themeType);
   };
   
+  const handleRemoveAvatar = async () => {
+    setAvatarUrl("");
+    setAvatarFile(null);
+    if (user) {
+      await updateUserProfile({ avatar_url: "" });
+      toast.success("Avatar removed");
+    }
+  };
+  
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -139,7 +193,7 @@ const Settings = () => {
                 <div className="flex flex-col md:flex-row md:items-center gap-6">
                   <div>
                     <Avatar className="h-24 w-24">
-                      <AvatarImage src={user?.avatar_url || ""} alt={user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : ""} />
+                      <AvatarImage src={avatarUrl || user?.avatar_url || ""} alt={user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : ""} />
                       <AvatarFallback className="text-lg">{user?.first_name?.charAt(0) || "U"}</AvatarFallback>
                     </Avatar>
                   </div>
@@ -147,8 +201,17 @@ const Settings = () => {
                   <div className="space-y-2">
                     <h3 className="font-medium">Profile Photo</h3>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => toast.info("Image upload feature coming soon")}>Change</Button>
-                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => toast.info("Avatar removed")}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: "none" }}
+                        id="avatar-upload"
+                        onChange={handleAvatarChange}
+                      />
+                      <label htmlFor="avatar-upload">
+                        <Button as="span" variant="outline" size="sm">Change</Button>
+                      </label>
+                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={handleRemoveAvatar}>
                         Remove
                       </Button>
                     </div>
